@@ -1,0 +1,24 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.atifimal.zort'
+version = '1.0.0'
+
+expoModule {
+  v2 true
+}
+
+android {
+  namespace "expo.modules.linkopener"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // Ephemeral Custom Tabs (setEphemeralBrowsingEnabled) are stable from 1.9.0
+  implementation 'androidx.browser:browser:1.10.0'
+}

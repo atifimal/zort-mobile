@@ -8,6 +8,8 @@ import { Platform } from 'react-native';
 import { addNoteOpenListener, consumePendingNoteOpen } from '@modules/pinned-notifications';
 
 import { migrate } from '@/lib/db';
+import { LinksProvider } from '@/lib/links-context';
+import { MemosProvider } from '@/lib/memos-context';
 import { NotesProvider, useNotes } from '@/lib/notes-context';
 import { useStackScreenOptions } from '@/lib/stack-options';
 import { applySavedTheme } from '@/lib/theme-preference';
@@ -26,13 +28,19 @@ export default function RootLayout() {
       {/* At the root, not inside Pin Note: notifications are kept in sync even when the app
           opens on another screen */}
       <NotesProvider>
-        <HideSplashWhenLoaded />
-        <OpenNotesFromNotifications />
-        <StatusBar style="auto" />
-        <Stack screenOptions={screenOptions}>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="pin-notes" options={{ headerShown: false }} />
-        </Stack>
+        <LinksProvider>
+          <MemosProvider>
+            <HideSplashWhenLoaded />
+            <OpenNotesFromNotifications />
+            <StatusBar style="auto" />
+            <Stack screenOptions={screenOptions}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="pin-notes" options={{ headerShown: false }} />
+              <Stack.Screen name="links" options={{ headerShown: false }} />
+              <Stack.Screen name="notes" options={{ headerShown: false }} />
+            </Stack>
+          </MemosProvider>
+        </LinksProvider>
       </NotesProvider>
     </SQLiteProvider>
   );

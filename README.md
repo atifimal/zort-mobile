@@ -1,7 +1,7 @@
 # Zort (mobil)
 
-zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü; şu an tek araç **Pin Note**,
-yenileri aynı menüye eklenecek (`src/app/index.tsx` içindeki `tools` listesi).
+zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pin Note**, **Links** ve **Notes**; yenileri
+aynı menüye eklenir (`src/app/index.tsx` içindeki `tools` listesi).
 
 ## Pin Note
 
@@ -45,6 +45,41 @@ açılışa kadar bildirimler gelmez).
 Bildirimler sessiz: ses çıkarmaz, ekranı açmaz, üstten düşmez (Android'de "düşük önem"
 kanalı, iOS'ta "passive"). Geri gelen bir bildirim seni rahatsız etmez.
 
+## Links
+
+Kaydettiğin linkler.
+
+- Adres + isteğe bağlı başlık. `example.com/a` gibi yazılabilir, `https://` eklenir; web adresi
+  olmayan şeyler kaydedilmez. Başlık yoksa listede sitenin adresi gösterilir.
+- **Dokununca** (ya da basılı tutunca) küçük bir menü: **Aç** (varsayılan tarayıcıda),
+  **Gizli sekmede aç**, **Linki kopyala**, Düzenle, Sil.
+- Site ikonu (favicon) yok, yerine sitenin baş harfi: ikon için her linki üçüncü bir servise
+  sormak gerekirdi.
+
+### Gizli sekmede aç
+
+Android'de bir uygulamanın linki "varsayılan tarayıcının gizli sekmesinde" açmasının genel bir
+yolu yok; Chrome'un kendi Incognito ayarını yalnızca Google'ın uygulamalarından kabul ediyor.
+Üçüncü parti uygulamalar için resmî yol **Ephemeral Custom Tab** (Chrome 136+,
+`androidx.browser` 1.9+): varsayılan tarayıcıda açılan bir sekme; geçmiş, çerezler, önbellek
+ve oturumlar yalnızca o sekmede yaşar ve sekme kapanınca silinir. Chrome'un menüsünde
+"Open in Incognito Chrome" seçeneğiyle normal gizli sekmeye de geçilebilir.
+
+- Seçenek yalnızca **varsayılan tarayıcı bunu destekliyorsa** görünür (`modules/link-opener`,
+  `CustomTabsClient.isEphemeralBrowsingSupported`); uygulama her öne geldiğinde yeniden bakılır.
+  Desteklemeyen bir tarayıcıda (ya da varsayılan tarayıcı seçilmemişse) menüde hiç çıkmaz.
+- **iOS'ta yok:** Safari'nin ya da başka bir tarayıcının gizli sekmesini açmanın yolu yok.
+
+## Notes
+
+Bildirimlere girmeyen, yalnızca uygulamada duran notlar.
+
+- Başlık (zorunlu) + açıklama (isteğe bağlı, 10.000 karaktere kadar)
+- **Dokununca** (ya da basılı tutunca) menü: **Notu kopyala** (başlık, boş satır, açıklama),
+  Düzenle, Sil
+- Liste son düzenlenene göre sıralı; kartta düzenleme tarihi görünür
+- Kodda Pin Note'un `Note` tipiyle karışmasın diye `Memo` adıyla geçer (`memos` tablosu)
+
 ## Yapı
 
 ```
@@ -55,14 +90,29 @@ src/app/                   ekranlar (Expo Router)
     _layout.tsx            Pin Note ekranlarının yığını
     index.tsx              not listesi
     [id].tsx               not ekleme/düzenleme (id = "new" yeni not)
+  links/
+    index.tsx              link listesi, dokununca açılan menü
+    [id].tsx               link ekleme/düzenleme
+  notes/
+    index.tsx              not listesi (Notes), dokununca açılan menü
+    [id].tsx               not ekleme/düzenleme
 src/components/
   NoteCard.tsx             listedeki not: iğne düğmesi, durum satırı
   PinSettings.tsx          düzenleme ekranındaki iğne / Her zaman / başlangıç-bitiş bölümü
   DateTimeField.tsx        tarih+saat satırı (iOS: kompakt seçici, Android: sistem pencereleri)
+  ModalHeader.tsx          düzenleme ekranlarının Vazgeç / başlık / Kaydet çubuğu
+  ActionSheet.tsx          alttan açılan küçük eylem menüsü
+  LinkCard.tsx, MemoCard.tsx   listedeki link / not
+  Toast.tsx                "Link kopyalandı" gibi kısa mesaj
 src/lib/
   db.ts                    SQLite şeması (v2: pinned, pin_start, pin_end) ve sorgular
   notes-context.tsx        notlar, bildirimleri eşitleme, bildirim düğmelerinin kuyruğunu işleme
   pin-status.ts            iğne durumu (iğnesiz / her zaman / başlayacak / görünüyor / bitti)
+  links-db.ts, links-context.tsx   linkler (v3: links tablosu)
+  memos-db.ts, memos-context.tsx   Notes sayfasının notları (v4: memos tablosu)
+  clipboard.ts             kopyalama (Android 13+ kendi onayını gösterdiği için mesajı atlar)
+  url.ts                   elle yazılan adresi düzeltme ve doğrulama
+  open-link.ts             tarayıcıda / gizli sekmede açma
   i18n.ts, theme.ts        metinler (tr/en), zort.ing ile aynı renkler
 modules/pinned-notifications/   bildirimler için native modül
   android/  (Kotlin)       ongoing bildirim, kaydırılınca geri koyma, açılışta geri yükleme,
@@ -70,6 +120,7 @@ modules/pinned-notifications/   bildirimler için native modül
   ios/      (Swift)        customDismissAction ile geri koyma, bildirime dokunma,
                            zamanlanmış bildirim, İğneyi kaldır / Sil düğmeleri
   index.ts                 JS API: syncPinnedNotes, requestPermission, ...
+modules/link-opener/       yalnızca Android: varsayılan tarayıcıda gizli (ephemeral) sekme
 plugins/with-short-cxx-dir.js   Windows'ta 260 karakter yol sınırını aşmak için derleme ayarı
 scripts/make-icons.mjs     uygulama ikonlarını zort.ing logosundan üretir
 ```
@@ -132,16 +183,18 @@ npm run typecheck
 ### Android: telefona APK kurma
 
 ```bash
-npx expo prebuild --platform android --clean
-cd android
-gradlew.bat assembleRelease
+npm run build:apk
 ```
 
-APK: `android/app/build/outputs/apk/release/app-release.apk`. Telefona at, kur
-(bilinmeyen kaynaklara izin vermek gerekir). Telefonda **Zort** adıyla görünür.
+(`ANDROID_HOME` ve `JAVA_HOME` tanımlı olmalı.) APK:
+`android/app/build/outputs/apk/release/app-release.apk`. Telefona at, kur (bilinmeyen
+kaynaklara izin vermek gerekir). Telefonda **Zort** adıyla görünür.
 
-Windows'taki 260 karakter yol sınırı `plugins/with-short-cxx-dir.js` ile aşılıyor (C++
-derlemesi proje kökündeki `.cx` klasöründe yapılır); ek bir ayar gerekmez.
+Komut APK'yı yalnızca 64-bit ARM (`arm64-v8a`, son yılların tüm telefonları) için derler ve
+Gradle'a daha fazla bellek verir (varsayılan 512 MB metaspace R8 adımında yetmiyor). Windows'taki
+260 karakter yol sınırını uygulamanın C++ derlemesi için `plugins/with-short-cxx-dir.js` aşıyor;
+ancak Reanimated'in kendi derlemesi 32-bit ARM'de (`armeabi-v7a`) sınırı yine aşıyor. Bu yüzden
+o mimari derlenmiyor.
 
 Release APK şu an Expo şablonundaki **debug anahtarıyla** imzalanıyor. Kendi kullanımın için
 yeterli. Ancak anahtarı değiştirirsen, telefondaki uygulama yeni APK ile güncellenmez;
@@ -166,7 +219,8 @@ iOS uygulaması yalnızca macOS + Xcode ile derlenebilir. Windows'tan iki yol va
 > emülatöründe uçtan uca denendi: ekleme, düzenleme, silme, kaydırınca geri gelme,
 > "Tümünü temizle", uygulama güncellemesi ve yeniden başlatma sonrası geri yükleme;
 > listeden iğne kaldırma, bildirimdeki İğneyi kaldır / Sil (uygulama açıkken ve kapalıyken),
-> zaman aralığının başlangıcı (uygulama kapalıyken) ve bitişi.
+> zaman aralığının başlangıcı (uygulama kapalıyken) ve bitişi; Links: ekleme, doğrulama,
+> açma, gizli sekmede açma (Chrome 149), kopyalama, silme.
 
 ## Sınırlar
 

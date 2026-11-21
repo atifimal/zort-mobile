@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '@/components/Icon';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { t } from '@/lib/i18n';
+import { useLinks } from '@/lib/links-context';
+import { useMemos } from '@/lib/memos-context';
 import { useNotes } from '@/lib/notes-context';
 import { isShown } from '@/lib/pin-status';
 import { radius, spacing, useColors } from '@/lib/theme';
@@ -25,6 +27,8 @@ export default function HomeScreen() {
   const dark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
   const { notes, permission, now } = useNotes();
+  const { links } = useLinks();
+  const { memos } = useMemos();
   const shownCount = notes.filter((note) => isShown(note, now)).length;
 
   const tools: Tool[] = [
@@ -43,6 +47,32 @@ export default function HomeScreen() {
               ? t('pinNoteCountOne')
               : t('pinNoteCountMany', { n: shownCount }),
       warning: shownCount > 0 && permission !== null && permission !== 'granted' ? t('notificationsOff') : undefined,
+    },
+    {
+      key: 'links',
+      title: t('linksTitle'),
+      description: t('linksDescription'),
+      icon: 'link',
+      href: '/links',
+      status:
+        links.length === 0
+          ? t('linksEmpty')
+          : links.length === 1
+            ? t('linksCountOne')
+            : t('linksCountMany', { n: links.length }),
+    },
+    {
+      key: 'notes',
+      title: t('notesTitle'),
+      description: t('notesDescription'),
+      icon: 'note',
+      href: '/notes',
+      status:
+        memos.length === 0
+          ? t('notesEmpty')
+          : memos.length === 1
+            ? t('countOne')
+            : t('countMany', { n: memos.length }),
     },
   ];
 

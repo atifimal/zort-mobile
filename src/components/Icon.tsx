@@ -12,6 +12,13 @@ const icons = {
   notificationsOff: { ios: 'bell.slash.fill', android: 'notifications_off' },
   delete: { ios: 'trash', android: 'delete' },
   chevron: { ios: 'chevron.right', android: 'chevron_right' },
+  link: { ios: 'link', android: 'link' },
+  open: { ios: 'arrow.up.right.square', android: 'open_in_browser' },
+  privateTab: { ios: 'eye.slash', android: 'visibility_off' },
+  copy: { ios: 'doc.on.doc', android: 'content_copy' },
+  edit: { ios: 'pencil', android: 'edit' },
+  note: { ios: 'note.text', android: 'notes' },
+  more: { ios: 'ellipsis', android: 'more_horiz' },
   sun: { ios: 'sun.max.fill', android: 'light_mode' },
   moon: { ios: 'moon.fill', android: 'dark_mode' },
 } satisfies Record<string, Extract<SymbolViewProps['name'], object>>;

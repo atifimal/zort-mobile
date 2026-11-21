@@ -25,7 +25,7 @@ type NoteRow = {
   updated_at: number;
 };
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 4;
 
 /** Runs on open; brings the schema up to DATABASE_VERSION one step at a time. */
 export async function migrate(db: SQLiteDatabase): Promise<void> {
@@ -60,6 +60,41 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       `);
     });
     version = 2;
+  }
+
+  if (version === 2) {
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS links (
+          id         TEXT PRIMARY KEY NOT NULL,
+          url        TEXT NOT NULL,
+          title      TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS links_created_at ON links (created_at DESC);
+        PRAGMA user_version = 3;
+      `);
+    });
+    version = 3;
+  }
+
+  if (version === 3) {
+    // Notes page (plain notes, never in notifications); see memos-db.ts
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS memos (
+          id         TEXT PRIMARY KEY NOT NULL,
+          title      TEXT NOT NULL,
+          body       TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS memos_updated_at ON memos (updated_at DESC);
+        PRAGMA user_version = 4;
+      `);
+    });
+    version = 4;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
+import { ModalHeader } from '@/components/ModalHeader';
 import { PinSettings } from '@/components/PinSettings';
 import type { PinWindow } from '@/lib/db';
 import { t } from '@/lib/i18n';
@@ -57,7 +58,6 @@ function NoteEditor({ id }: { id: string }) {
   const { notes, now, createNote, editNote, removeNote } = useNotes();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
 
   const isNew = id === 'new';
   // The note as it was when the editor opened; edits are compared against this
@@ -93,10 +93,20 @@ function NoteEditor({ id }: { id: string }) {
           : undefined;
   const canSave = title.trim().length > 0 && !busy && !windowError;
 
-  usePreventRemove(dirty && !done, ({ data }) => {
+  // Leaving with unsaved changes asks first. "Discard" turns the guard off and replays the
+  // blocked action with repeat(): re-dispatching it would just be blocked again.
+  const [discarding, setDiscarding] = useState(false);
+  usePreventRemove(dirty && !done && !discarding, ({ repeat }) => {
     Alert.alert(t('discardTitle'), t('discardMessage'), [
       { text: t('keepEditing'), style: 'cancel' },
-      { text: t('discard'), style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      {
+        text: t('discard'),
+        style: 'destructive',
+        onPress: () => {
+          setDiscarding(true);
+          repeat();
+        },
+      },
     ]);
   });
 
@@ -146,32 +156,13 @@ function NoteEditor({ id }: { id: string }) {
     ]);
   };
 
-  // Our own bar rather than the native header's headerLeft/headerRight: react-native-screens on
-  // Android crashes ("child already has a parent") when those re-render while the modal closes.
   const topBar = (
-    <View
-      style={[
-        styles.topBar,
-        // The iOS sheet starts below the status bar; Android's modal covers the whole screen
-        { paddingTop: Platform.OS === 'android' ? insets.top : 0, borderBottomColor: colors.border },
-      ]}
-    >
-      <HeaderButton label={t('cancel')} onPress={() => router.back()} color={colors.accent} />
-      <Text style={[styles.topBarTitle, { color: colors.text }]} numberOfLines={1} accessibilityRole="header">
-        {isNew ? t('newNote') : t('editNote')}
-      </Text>
-      {isNew || existing ? (
-        <HeaderButton
-          label={t('save')}
-          onPress={save}
-          disabled={!canSave}
-          color={canSave ? colors.accent : colors.textTertiary}
-          bold
-        />
-      ) : (
-        <View />
-      )}
-    </View>
+    <ModalHeader
+      title={isNew ? t('newNote') : t('editNote')}
+      onCancel={() => router.back()}
+      onSave={isNew || existing ? save : undefined}
+      canSave={canSave}
+    />
   );
 
   // Opened from a notification of a note that was deleted in the meantime
@@ -262,30 +253,6 @@ function NoteEditor({ id }: { id: string }) {
   );
 }
 
-function HeaderButton({
-  label,
-  onPress,
-  color,
-  disabled,
-  bold,
-}: {
-  label: string;
-  onPress: () => void;
-  color: string;
-  disabled?: boolean;
-  bold?: boolean;
-}) {
-  return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={12} accessibilityRole="button">
-      {({ pressed }) => (
-        <Text style={[styles.headerButton, { color, opacity: pressed ? 0.6 : 1 }, bold && styles.headerButtonBold]}>
-          {label}
-        </Text>
-      )}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg },
   card: { borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
@@ -316,18 +283,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   deleteText: { fontSize: 16, fontWeight: '600' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 56,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '600', textAlign: 'center' },
-  headerButton: { fontSize: 17, paddingVertical: spacing.md },
-  headerButtonBold: { fontWeight: '600' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl },
   missingText: { fontSize: 16, textAlign: 'center' },
 });
