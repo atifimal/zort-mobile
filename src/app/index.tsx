@@ -6,6 +6,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { t } from '@/lib/i18n';
 import { useNotes } from '@/lib/notes-context';
+import { isShown } from '@/lib/pin-status';
 import { radius, spacing, useColors } from '@/lib/theme';
 
 type Tool = {
@@ -23,7 +24,8 @@ export default function HomeScreen() {
   const colors = useColors();
   const dark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
-  const { notes, permission } = useNotes();
+  const { notes, permission, now } = useNotes();
+  const shownCount = notes.filter((note) => isShown(note, now)).length;
 
   const tools: Tool[] = [
     {
@@ -35,10 +37,12 @@ export default function HomeScreen() {
       status:
         notes.length === 0
           ? t('pinNoteEmpty')
-          : notes.length === 1
-            ? t('pinNoteCountOne')
-            : t('pinNoteCountMany', { n: notes.length }),
-      warning: notes.length > 0 && permission !== null && permission !== 'granted' ? t('notificationsOff') : undefined,
+          : shownCount === 0
+            ? t('pinNoteNoneShown')
+            : shownCount === 1
+              ? t('pinNoteCountOne')
+              : t('pinNoteCountMany', { n: shownCount }),
+      warning: shownCount > 0 && permission !== null && permission !== 'granted' ? t('notificationsOff') : undefined,
     },
   ];
 

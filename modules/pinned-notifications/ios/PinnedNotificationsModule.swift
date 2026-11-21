@@ -6,9 +6,11 @@ struct PinnedNoteRecord: Record {
   @Field var body: String = ""
   @Field var url: String? = nil
   @Field var sortKey: Double = 0
+  @Field var startsAt: Double? = nil
+  @Field var endsAt: Double? = nil
 
   func toNote() -> PinnedNote {
-    PinnedNote(id: id, title: title, body: body, url: url, sortKey: sortKey)
+    PinnedNote(id: id, title: title, body: body, url: url, sortKey: sortKey, startsAt: startsAt, endsAt: endsAt)
   }
 }
 
@@ -16,7 +18,17 @@ public class PinnedNotificationsModule: Module {
   public func definition() -> ModuleDefinition {
     Name("PinnedNotifications")
 
-    Events("onNoteOpen")
+    Events("onNoteOpen", "onNoteAction")
+
+    OnStartObserving("onNoteAction") {
+      PinnedNotifier.shared.actionHandler = { [weak self] in
+        self?.sendEvent("onNoteAction", [:])
+      }
+    }
+
+    OnStopObserving("onNoteAction") {
+      PinnedNotifier.shared.actionHandler = nil
+    }
 
     OnStartObserving("onNoteOpen") {
       DispatchQueue.main.async {
@@ -36,6 +48,14 @@ public class PinnedNotificationsModule: Module {
       PinnedNotifier.shared.sync(notes.map { $0.toNote() }) {
         promise.resolve(nil)
       }
+    }
+
+    AsyncFunction("getPendingActions") { () -> [[String: String]] in
+      PinnedNotifier.shared.store.pendingActions().map { ["id": $0.key, "action": $0.value.rawValue] }
+    }
+
+    AsyncFunction("acknowledgeActions") { (ids: [String]) in
+      PinnedNotifier.shared.store.acknowledgeActions(ids)
     }
 
     AsyncFunction("getPermissionStatus") { (promise: Promise) in

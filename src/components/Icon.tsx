@@ -5,6 +5,10 @@ import type { ColorValue } from 'react-native';
 const icons = {
   add: { ios: 'plus', android: 'add' },
   pin: { ios: 'pin.fill', android: 'push_pin' },
+  pinOff: { ios: 'pin.slash', android: 'keep_off' },
+  clock: { ios: 'clock', android: 'schedule' },
+  checkboxOn: { ios: 'checkmark.square.fill', android: 'check_box' },
+  checkboxOff: { ios: 'square', android: 'check_box_outline_blank' },
   notificationsOff: { ios: 'bell.slash.fill', android: 'notifications_off' },
   delete: { ios: 'trash', android: 'delete' },
   chevron: { ios: 'chevron.right', android: 'chevron_right' },

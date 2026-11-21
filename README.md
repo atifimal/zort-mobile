@@ -5,11 +5,18 @@ yenileri aynı menüye eklenecek (`src/app/index.tsx` içindeki `tools` listesi)
 
 ## Pin Note
 
-Eklediğin her not ayrı bir bildirim olarak durur ve sen uygulamadan silene kadar
+İğnelediğin her not ayrı bir bildirim olarak durur ve iğnesini kaldırana (ya da silene) kadar
 bildirimlerden kalkmaz.
 
 - Başlık + açıklama (açıklama isteğe bağlı)
 - Her not = ayrı bir bildirim; düzenlenince bildirim güncellenir, silinince kalkar
+- **İğneli / iğnesiz:** yeni not varsayılan olarak iğneli. İğnesiz not uygulamada durur ama
+  bildirimde görünmez. Listedeki iğne düğmesiyle düzenleme ekranına girmeden değiştirilir.
+- **Zaman aralığı:** varsayılan "Her zaman". İşareti kaldırınca başlangıç ve bitiş seçilir;
+  not yalnızca bu aralıkta bildirimde görünür (uygulama kapalıyken de). Liste, notun
+  durumunu gösterir: "... tarihinde başlar", "... tarihine kadar", "... tarihinde bitti".
+- **Bildirimdeki düğmeler:** bildirimi genişletince **İğneyi kaldır** ve **Sil**. Uygulama
+  kapalıyken de çalışır (aşağıya bakın).
 - Bildirime dokununca uygulama o notun düzenleme ekranında açılır
 - Açık/koyu tema, Türkçe/İngilizce (telefon diline göre)
 - Veriler yalnızca telefonda (SQLite); sunucu, hesap, internet yok
@@ -48,13 +55,20 @@ src/app/                   ekranlar (Expo Router)
     _layout.tsx            Pin Note ekranlarının yığını
     index.tsx              not listesi
     [id].tsx               not ekleme/düzenleme (id = "new" yeni not)
+src/components/
+  NoteCard.tsx             listedeki not: iğne düğmesi, durum satırı
+  PinSettings.tsx          düzenleme ekranındaki iğne / Her zaman / başlangıç-bitiş bölümü
+  DateTimeField.tsx        tarih+saat satırı (iOS: kompakt seçici, Android: sistem pencereleri)
 src/lib/
-  db.ts                    SQLite şeması ve sorgular
-  notes-context.tsx        notlar + her değişiklikte bildirimleri eşitleme
+  db.ts                    SQLite şeması (v2: pinned, pin_start, pin_end) ve sorgular
+  notes-context.tsx        notlar, bildirimleri eşitleme, bildirim düğmelerinin kuyruğunu işleme
+  pin-status.ts            iğne durumu (iğnesiz / her zaman / başlayacak / görünüyor / bitti)
   i18n.ts, theme.ts        metinler (tr/en), zort.ing ile aynı renkler
 modules/pinned-notifications/   bildirimler için native modül
-  android/  (Kotlin)       ongoing bildirim, kaydırılınca geri koyma, açılışta geri yükleme
-  ios/      (Swift)        customDismissAction ile geri koyma, bildirime dokunma
+  android/  (Kotlin)       ongoing bildirim, kaydırılınca geri koyma, açılışta geri yükleme,
+                           zaman aralığı (alarm + timeout), İğneyi kaldır / Sil düğmeleri
+  ios/      (Swift)        customDismissAction ile geri koyma, bildirime dokunma,
+                           zamanlanmış bildirim, İğneyi kaldır / Sil düğmeleri
   index.ts                 JS API: syncPinnedNotes, requestPermission, ...
 plugins/with-short-cxx-dir.js   Windows'ta 260 karakter yol sınırını aşmak için derleme ayarı
 scripts/make-icons.mjs     uygulama ikonlarını zort.ing logosundan üretir
@@ -66,6 +80,34 @@ kendisi de saklar. Böylece kaydırma ve yeniden başlatma durumları React Nati
 başlamadan, doğrudan Kotlin/Swift tarafında halledilir.
 
 Bildirime dokununca açılan bağlantı: `zort://pin-notes/<not id>`.
+
+### Zaman aralığı
+
+Zamanlama native tarafta, uygulama kapalıyken de çalışır:
+
+- **Android:** bitişi olan bildirim, sistemin kendi zaman aşımıyla (`setTimeoutAfter`) tam
+  bitiş anında kalkar. Başlangıçlar için bir sonraki başlangıç/bitiş anına tek bir alarm
+  kurulur. Alarmlar yeniden başlatma, güncelleme ve saat/saat dilimi değişikliğinde yeniden
+  kurulur. Exact alarm izni Android 13'e kadar varsayılan olarak verilir; Android 14+ verilmez,
+  o zaman alarm inexact olur ve başlangıç (telefon boşta beklerken) birkaç dakika gecikebilir.
+  Emülatörde (Android 17) gecikme 1 dakikanın altındaydı.
+- **iOS:** başlayacak not tetikleyiciyle (`UNTimeIntervalNotificationTrigger`) zamanlanır,
+  iOS onu zamanında gösterir. Ama iOS, gösterilmiş bir bildirimi belirli bir saatte kaldırmaya
+  izin vermez: süresi biten not uygulama bir sonraki açıldığında (ya da bildirim kaydırılınca,
+  çünkü artık geri konmaz) kalkar.
+
+### Bildirimdeki "İğneyi kaldır" ve "Sil"
+
+Düğmeler native tarafta işlenir: bildirim hemen kalkar ve işlem bir kuyruğa yazılır.
+Uygulama açıksa anında, kapalıysa bir sonraki açılışta kuyruğu okuyup notlar
+veritabanına işler ve kuyruğu onaylar (`getPendingNoteActions` / `acknowledgeNoteActions`).
+Onaylanana kadar native taraf bu notları eşitlemede yok sayar; böylece işlemden önce
+okunmuş bir liste, iğnesi kaldırılmış notu geri getiremez.
+
+Native taraf veritabanına doğrudan yazmaz: expo-sqlite kendi SQLite kopyasını getiriyor;
+aynı dosyayı aynı süreçte sistemin SQLite'ıyla açmak WAL veritabanını bozabilir.
+
+Sil düğmesi onay sormaz (bildirim düğmesinde onay penceresi yok).
 
 ## İkonlar
 
@@ -122,13 +164,15 @@ iOS uygulaması yalnızca macOS + Xcode ile derlenebilir. Windows'tan iki yol va
 > iOS tarafı (Swift) bu makinede derlenemediği için henüz hiç derlenmedi ve cihazda
 > denenmedi. İlk iOS derlemesinde küçük düzeltmeler gerekebilir. Android tarafı Android 17
 > emülatöründe uçtan uca denendi: ekleme, düzenleme, silme, kaydırınca geri gelme,
-> "Tümünü temizle", uygulama güncellemesi ve yeniden başlatma sonrası geri yükleme.
+> "Tümünü temizle", uygulama güncellemesi ve yeniden başlatma sonrası geri yükleme;
+> listeden iğne kaldırma, bildirimdeki İğneyi kaldır / Sil (uygulama açıkken ve kapalıyken),
+> zaman aralığının başlangıcı (uygulama kapalıyken) ve bitişi.
 
 ## Sınırlar
 
-- Android bir uygulamanın aynı anda en fazla ~50 bildirim göstermesine izin verir; daha
-  fazla notun bildirimleri görünmez.
-- Yeni Android sürümleri (16+) aynı uygulamanın bildirimlerini 2 taneden itibaren tek bir
-  grupta toplar. Her not yine ayrı bir bildirimdir: grup açılınca alt alta görünür, her
-  biri ayrı ayrı açılır, kaydırılır ve geri gelir. Bu gruplamayı uygulama kapatamaz.
-  Eski sürümlerde gruplama 4 bildirimden itibaren başlar.
+- Android 16+, bir uygulamanın grupsuz bildirimlerini 2 taneden itibaren tek bir kapalı
+  grupta toplar (eski sürümlerde 4'ten itibaren). Bunu önlemek için her not kendi grubunda,
+  kendi özet (summary) bildirimiyle gönderilir. Tek elemanlı grup sadece notun kendisi
+  olarak çizildiği için özet görünmez ve her not bildirimlerde ayrı durur.
+- Android bir uygulamanın aynı anda en fazla ~50 bildirim göstermesine izin verir. Her not
+  özetiyle birlikte 2 bildirim tuttuğu için bu yaklaşık 25 not eder; fazlası görünmez.

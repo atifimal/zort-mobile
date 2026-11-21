@@ -2,6 +2,9 @@
 
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Shows and hides time-windowed notes on time. Granted by default up to Android 13; where
+       it isn't, the alarm is inexact and may run a few minutes late while the phone is idle. -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
   <application>
     <!-- Fired by a notification's delete intent: puts the note straight back. -->
@@ -9,13 +12,21 @@
       android:name="expo.modules.pinnednotifications.NotificationDismissedReceiver"
       android:exported="false" />
 
-    <!-- The system removes an app's notifications on reboot and on app update. -->
+    <!-- The Unpin and Delete buttons on a note's notification. -->
+    <receiver
+      android:name="expo.modules.pinnednotifications.NotificationActionReceiver"
+      android:exported="false" />
+
+    <!-- The system removes an app's notifications and alarms on reboot and on app update; a
+         clock change moves the time windows; and the alarm for the next start or end. -->
     <receiver
       android:name="expo.modules.pinnednotifications.RestoreNotificationsReceiver"
       android:exported="false">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />
         <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
       </intent-filter>
     </receiver>
   </application>

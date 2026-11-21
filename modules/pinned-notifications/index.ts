@@ -9,7 +9,21 @@ export type PinnedNote = {
   url?: string;
   /** Higher sorts first. */
   sortKey: number;
+  /**
+   * Optional time window (ms since epoch): the notification appears at `startsAt` and goes
+   * away at `endsAt`. Either end can be left open. Handled natively, so it works while the
+   * app is closed.
+   */
+  startsAt?: number | null;
+  endsAt?: number | null;
 };
+
+/**
+ * What the user did from a note's notification (its Unpin and Delete buttons). Applied
+ * natively right away (the notification goes); the app applies it to its own data with
+ * `getPendingNoteActions` and confirms with `acknowledgeNoteActions`.
+ */
+export type NoteAction = { id: string; action: 'unpin' | 'delete' };
 
 /**
  * - granted: notifications can be shown
@@ -20,6 +34,7 @@ export type PermissionStatus = 'granted' | 'undetermined' | 'denied';
 
 type Events = {
   onNoteOpen(event: { id: string }): void;
+  onNoteAction(): void;
 };
 
 declare class PinnedNotificationsNativeModule extends NativeModule<Events> {
@@ -27,13 +42,17 @@ declare class PinnedNotificationsNativeModule extends NativeModule<Events> {
   getPermissionStatus(): Promise<PermissionStatus>;
   requestPermission(): Promise<PermissionStatus>;
   consumePendingNoteOpen(): Promise<string | null>;
+  getPendingActions(): Promise<NoteAction[]>;
+  acknowledgeActions(ids: string[]): Promise<void>;
 }
 
 const native = requireNativeModule<PinnedNotificationsNativeModule>('PinnedNotifications');
 
 /**
- * Makes the notifications match `notes` exactly: one per note, removed when the note is gone.
- * Idempotent and cheap to call after every change; unchanged notes are not re-posted.
+ * Makes the notifications match `notes` exactly: one per note while inside its time window,
+ * removed when the note is gone. Idempotent and cheap to call after every change; unchanged
+ * notes are not re-posted. Notes with an action still waiting to be acknowledged are left out,
+ * so a list read before the action was applied can't bring an unpinned note back.
  */
 export function syncPinnedNotes(notes: PinnedNote[]): Promise<void> {
   return native.sync(notes);
@@ -84,4 +103,19 @@ export function consumePendingNoteOpen(): Promise<string | null> {
 /** iOS: called when the user taps a note's notification while the app is running. */
 export function addNoteOpenListener(listener: (id: string) => void): EventSubscription {
   return native.addListener('onNoteOpen', ({ id }) => listener(id));
+}
+
+/** Unpin / Delete taps from notifications that the app hasn't applied to its data yet. */
+export function getPendingNoteActions(): Promise<NoteAction[]> {
+  return native.getPendingActions();
+}
+
+/** The app has applied these notes' actions to its data: forget them. */
+export function acknowledgeNoteActions(ids: string[]): Promise<void> {
+  return native.acknowledgeActions(ids);
+}
+
+/** Called when the user taps Unpin or Delete on a notification while the app is running. */
+export function addNoteActionListener(listener: () => void): EventSubscription {
+  return native.addListener('onNoteAction', listener);
 }

@@ -16,8 +16,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
+import { PinSettings } from '@/components/PinSettings';
+import type { PinWindow } from '@/lib/db';
 import { t } from '@/lib/i18n';
 import { useNotes } from '@/lib/notes-context';
+import { defaultWindow } from '@/lib/pin-status';
 import { limits, radius, spacing, useColors } from '@/lib/theme';
 
 export default function NoteEditorScreen() {
@@ -51,7 +54,7 @@ function useListUnderneath() {
 }
 
 function NoteEditor({ id }: { id: string }) {
-  const { notes, createNote, editNote, removeNote } = useNotes();
+  const { notes, now, createNote, editNote, removeNote } = useNotes();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -62,13 +65,33 @@ function NoteEditor({ id }: { id: string }) {
 
   const [title, setTitle] = useState(existing?.title ?? '');
   const [body, setBody] = useState(existing?.body ?? '');
+  // New notes are pinned, always; the window keeps its times while "Always" is ticked
+  const [pinned, setPinned] = useState(existing?.pinned ?? true);
+  const [always, setAlways] = useState(!existing?.window);
+  const [pinWindow, setPinWindow] = useState<PinWindow>(() => existing?.window ?? defaultWindow(Date.now()));
   const [busy, setBusy] = useState(false);
   // Set once saved or deleted: leaving no longer asks to discard, and the screen closes
   const [done, setDone] = useState(false);
   const bodyRef = useRef<TextInputInstance>(null);
 
-  const dirty = title !== (existing?.title ?? '') || body !== (existing?.body ?? '');
-  const canSave = title.trim().length > 0 && !busy;
+  const savedWindow = existing?.window ?? null;
+  const dirty =
+    title !== (existing?.title ?? '') ||
+    body !== (existing?.body ?? '') ||
+    pinned !== (existing?.pinned ?? true) ||
+    always !== !savedWindow ||
+    (!always && (pinWindow.start !== savedWindow?.start || pinWindow.end !== savedWindow?.end));
+
+  // Only a window that's in use can be wrong; an unpinned note keeps whatever it has
+  const windowError =
+    !pinned || always
+      ? undefined
+      : pinWindow.end <= pinWindow.start
+        ? t('windowInvalid')
+        : pinWindow.end <= now
+          ? t('windowEnded')
+          : undefined;
+  const canSave = title.trim().length > 0 && !busy && !windowError;
 
   usePreventRemove(dirty && !done, ({ data }) => {
     Alert.alert(t('discardTitle'), t('discardMessage'), [
@@ -86,10 +109,12 @@ function NoteEditor({ id }: { id: string }) {
       Alert.alert(t('titleRequired'));
       return;
     }
+    if (windowError) return;
+    const input = { title, body, pinned, window: always ? null : pinWindow };
     setBusy(true);
     try {
-      if (isNew) await createNote({ title, body });
-      else if (existing) await editNote(existing.id, { title, body });
+      if (isNew) await createNote(input);
+      else if (existing) await editNote(existing.id, input);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setDone(true);
     } catch (error) {
@@ -208,10 +233,15 @@ function NoteEditor({ id }: { id: string }) {
           ) : null}
         </View>
 
-        <View style={styles.hint}>
-          <Icon name="pin" size={14} color={colors.textTertiary} />
-          <Text style={[styles.hintText, { color: colors.textTertiary }]}>{t('pinnedHint')}</Text>
-        </View>
+        <PinSettings
+          pinned={pinned}
+          onPinnedChange={setPinned}
+          always={always}
+          onAlwaysChange={setAlways}
+          window={pinWindow}
+          onWindowChange={setPinWindow}
+          error={windowError}
+        />
 
         {existing ? (
           <Pressable
@@ -275,8 +305,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   counter: { fontSize: 12, textAlign: 'right', paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
-  hint: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.xs, marginTop: -spacing.sm },
-  hintText: { fontSize: 13 },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',

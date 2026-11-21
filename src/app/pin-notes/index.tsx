@@ -10,6 +10,7 @@ import { PermissionBanner } from '@/components/PermissionBanner';
 import type { Note } from '@/lib/db';
 import { t } from '@/lib/i18n';
 import { useNotes } from '@/lib/notes-context';
+import { isShown } from '@/lib/pin-status';
 import { radius, spacing, useColors } from '@/lib/theme';
 
 const FAB_SIZE = 60;
@@ -17,7 +18,7 @@ const FAB_SIZE = 60;
 export default function NotesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { notes, loaded, permission, removeNote, requestPermission } = useNotes();
+  const { notes, loaded, permission, now, removeNote, setPinned, requestPermission } = useNotes();
 
   const openNote = useCallback((note: Note) => {
     router.push({ pathname: '/pin-notes/[id]', params: { id: note.id } });
@@ -42,17 +43,29 @@ export default function NotesScreen() {
     [removeNote],
   );
 
+  const togglePin = useCallback(
+    (note: Note) => {
+      Haptics.selectionAsync().catch(() => {});
+      setPinned(note.id, !note.pinned).catch(() => Alert.alert(t('saveFailed')));
+    },
+    [setPinned],
+  );
+
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 
-  // Before the first note there's nothing to show yet; permission is asked when it's saved
-  const showBanner = notes.length > 0 && permission !== null && permission !== 'granted';
+  // Before the first pinned note there's nothing to show yet; permission is asked when it's saved
+  const shownCount = notes.filter((note) => isShown(note, now)).length;
+  const showBanner = notes.some((note) => note.pinned) && permission !== null && permission !== 'granted';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
         data={notes}
         keyExtractor={(note) => note.id}
-        renderItem={({ item }) => <NoteCard note={item} onPress={openNote} onLongPress={confirmDelete} />}
+        renderItem={({ item }) => (
+          <NoteCard note={item} now={now} onPress={openNote} onLongPress={confirmDelete} onTogglePin={togglePin} />
+        )}
+        extraData={now}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.list,
@@ -66,7 +79,7 @@ export default function NotesScreen() {
             {notes.length > 0 ? (
               <Text style={[styles.count, { color: colors.textTertiary }]}>
                 {notes.length === 1 ? t('countOne') : t('countMany', { n: notes.length })}
-                {permission === 'granted' ? ` · ${t('pinnedHint')}` : ''}
+                {permission === 'granted' ? ` · ${t('shownCount', { n: shownCount })}` : ''}
               </Text>
             ) : null}
           </>

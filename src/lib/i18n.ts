@@ -5,8 +5,9 @@ const en = {
   darkTheme: 'Dark theme',
   pinNoteDescription: 'Pin notes to your notifications. They stay there until you delete them.',
   pinNoteEmpty: 'No notes pinned yet',
-  pinNoteCountOne: '1 note pinned',
-  pinNoteCountMany: '{n} notes pinned',
+  pinNoteCountOne: '1 note in notifications',
+  pinNoteCountMany: '{n} notes in notifications',
+  pinNoteNoneShown: 'None in notifications right now',
   notificationsOff: 'Notifications are off',
   newNote: 'New note',
   editNote: 'Edit note',
@@ -36,6 +37,22 @@ const en = {
   countOne: '1 note',
   countMany: '{n} notes',
   addNote: 'Add note',
+  shownCount: '{n} in notifications',
+  pin: 'Pin',
+  unpin: 'Unpin',
+  pinToNotifications: 'Pin to notifications',
+  always: 'Always',
+  starts: 'Starts',
+  ends: 'Ends',
+  statusOff: 'Not pinned',
+  statusUntil: 'Until {date}',
+  statusStarts: 'Starts {date}',
+  statusEnded: 'Ended {date}',
+  editorAlways: 'Stays in notifications until you unpin it.',
+  editorWindow: 'Shown in notifications only between these times.',
+  editorOff: 'Saved here, but not shown in notifications.',
+  windowInvalid: 'The end must be after the start.',
+  windowEnded: 'This time range is already over, so the note wouldn’t be shown.',
 } as const;
 
 type Strings = { [K in keyof typeof en]: string };
@@ -45,8 +62,9 @@ const tr: Strings = {
   darkTheme: 'Koyu tema',
   pinNoteDescription: 'Notlarını bildirimlere iğnele. Sen silene kadar orada kalırlar.',
   pinNoteEmpty: 'Henüz iğnelenmiş not yok',
-  pinNoteCountOne: '1 not iğnelendi',
-  pinNoteCountMany: '{n} not iğnelendi',
+  pinNoteCountOne: 'Bildirimlerde 1 not',
+  pinNoteCountMany: 'Bildirimlerde {n} not',
+  pinNoteNoneShown: 'Şu an bildirimlerde not yok',
   notificationsOff: 'Bildirimler kapalı',
   newNote: 'Yeni not',
   editNote: 'Notu düzenle',
@@ -76,11 +94,29 @@ const tr: Strings = {
   countOne: '1 not',
   countMany: '{n} not',
   addNote: 'Not ekle',
+  shownCount: '{n} tanesi bildirimlerde',
+  pin: 'İğnele',
+  unpin: 'İğneyi kaldır',
+  pinToNotifications: 'Bildirimlere iğnele',
+  always: 'Her zaman',
+  starts: 'Başlangıç',
+  ends: 'Bitiş',
+  statusOff: 'İğneli değil',
+  statusUntil: '{date} tarihine kadar',
+  statusStarts: '{date} tarihinde başlar',
+  statusEnded: '{date} tarihinde bitti',
+  editorAlways: 'İğneyi kaldırana kadar bildirimlerde kalır.',
+  editorWindow: 'Yalnızca bu saatler arasında bildirimlerde görünür.',
+  editorOff: 'Burada saklanır ama bildirimlerde görünmez.',
+  windowInvalid: 'Bitiş, başlangıçtan sonra olmalı.',
+  windowEnded: 'Bu zaman aralığı çoktan bitti, not hiç görünmezdi.',
 };
 
 const dictionaries: Record<string, Strings> = { en, tr };
 
-const language = getLocales()[0]?.languageCode ?? 'en';
+const deviceLanguage = getLocales()[0]?.languageCode ?? 'en';
+/** The language the app is shown in: the phone's, if the app has it, otherwise English. */
+export const language = deviceLanguage in dictionaries ? deviceLanguage : 'en';
 const strings: Strings = dictionaries[language] ?? en;
 
 export function t(key: keyof Strings, params?: Record<string, string | number>): string {

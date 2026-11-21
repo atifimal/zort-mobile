@@ -45,6 +45,10 @@ final class PinnedNotificationDelegate: NSObject, UNUserNotificationCenterDelega
     switch response.actionIdentifier {
     case UNNotificationDismissActionIdentifier:
       PinnedNotifier.shared.onDismissed(id: request.identifier, completion: completionHandler)
+    case PinnedNotifier.unpinActionId:
+      PinnedNotifier.shared.onAction(.unpin, id: request.identifier, completion: completionHandler)
+    case PinnedNotifier.deleteActionId:
+      PinnedNotifier.shared.onAction(.delete, id: request.identifier, completion: completionHandler)
     case UNNotificationDefaultActionIdentifier:
       DispatchQueue.main.async {
         self.pendingOpenNoteId = request.identifier

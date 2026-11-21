@@ -1,9 +1,15 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+/** When a pinned note is shown in notifications (ms since epoch); null: always. */
+export type PinWindow = { start: number; end: number };
+
 export type Note = {
   id: string;
   title: string;
   body: string;
+  /** Shown in notifications (within `window`, if it has one). */
+  pinned: boolean;
+  window: PinWindow | null;
   createdAt: number;
   updatedAt: number;
 };
@@ -12,11 +18,14 @@ type NoteRow = {
   id: string;
   title: string;
   body: string;
+  pinned: number;
+  pin_start: number | null;
+  pin_end: number | null;
   created_at: number;
   updated_at: number;
 };
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 /** Runs on open; brings the schema up to DATABASE_VERSION one step at a time. */
 export async function migrate(db: SQLiteDatabase): Promise<void> {
@@ -39,6 +48,20 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
     version = 1;
   }
 
+  if (version === 1) {
+    // Notes from before pinning was optional were all pinned, always. The version is bumped in
+    // the same transaction, so an interrupted run can't leave the columns added twice.
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 1;
+        ALTER TABLE notes ADD COLUMN pin_start INTEGER;
+        ALTER TABLE notes ADD COLUMN pin_end INTEGER;
+        PRAGMA user_version = 2;
+      `);
+    });
+    version = 2;
+  }
+
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
 
@@ -46,6 +69,8 @@ const fromRow = (row: NoteRow): Note => ({
   id: row.id,
   title: row.title,
   body: row.body,
+  pinned: row.pinned !== 0,
+  window: row.pin_start !== null && row.pin_end !== null ? { start: row.pin_start, end: row.pin_end } : null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -57,10 +82,14 @@ export async function listNotes(db: SQLiteDatabase): Promise<Note[]> {
 
 export async function insertNote(db: SQLiteDatabase, note: Note): Promise<void> {
   await db.runAsync(
-    'INSERT INTO notes (id, title, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+    `INSERT INTO notes (id, title, body, pinned, pin_start, pin_end, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     note.id,
     note.title,
     note.body,
+    note.pinned ? 1 : 0,
+    note.window?.start ?? null,
+    note.window?.end ?? null,
     note.createdAt,
     note.updatedAt,
   );
@@ -68,12 +97,19 @@ export async function insertNote(db: SQLiteDatabase, note: Note): Promise<void> 
 
 export async function updateNote(db: SQLiteDatabase, note: Note): Promise<void> {
   await db.runAsync(
-    'UPDATE notes SET title = ?, body = ?, updated_at = ? WHERE id = ?',
+    'UPDATE notes SET title = ?, body = ?, pinned = ?, pin_start = ?, pin_end = ?, updated_at = ? WHERE id = ?',
     note.title,
     note.body,
+    note.pinned ? 1 : 0,
+    note.window?.start ?? null,
+    note.window?.end ?? null,
     note.updatedAt,
     note.id,
   );
+}
+
+export async function setNotePinned(db: SQLiteDatabase, id: string, pinned: boolean, updatedAt: number): Promise<void> {
+  await db.runAsync('UPDATE notes SET pinned = ?, updated_at = ? WHERE id = ?', pinned ? 1 : 0, updatedAt, id);
 }
 
 export async function deleteNote(db: SQLiteDatabase, id: string): Promise<void> {

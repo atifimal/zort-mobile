@@ -13,8 +13,10 @@ class PinnedNoteRecord : Record {
   @Field val body: String = ""
   @Field val url: String? = null
   @Field val sortKey: Double = 0.0
+  @Field val startsAt: Double? = null
+  @Field val endsAt: Double? = null
 
-  fun toNote() = PinnedNote(id, title, body, url, sortKey.toLong())
+  fun toNote() = PinnedNote(id, title, body, url, sortKey.toLong(), startsAt?.toLong(), endsAt?.toLong())
 }
 
 class PinnedNotificationsModule : Module() {
@@ -24,12 +26,32 @@ class PinnedNotificationsModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("PinnedNotifications")
 
-    // iOS only (Android opens notes through the deep link in the notification's content intent),
-    // declared here so the JS API is the same on both platforms.
-    Events("onNoteOpen")
+    // onNoteOpen is iOS only (Android opens notes through the deep link in the notification's
+    // content intent), declared here so the JS API is the same on both platforms.
+    Events("onNoteOpen", "onNoteAction")
+
+    OnStartObserving("onNoteAction") {
+      PinnedNotificationEvents.onAction = { sendEvent("onNoteAction") }
+    }
+
+    OnStopObserving("onNoteAction") {
+      PinnedNotificationEvents.onAction = null
+    }
+
+    OnDestroy {
+      PinnedNotificationEvents.onAction = null
+    }
 
     AsyncFunction("sync") { notes: List<PinnedNoteRecord> ->
       PinnedNotifier(context).sync(notes.map { it.toNote() })
+    }
+
+    AsyncFunction("getPendingActions") {
+      PinnedNoteStore(context).pendingActions().map { (id, action) -> mapOf("id" to id, "action" to action.value) }
+    }
+
+    AsyncFunction("acknowledgeActions") { ids: List<String> ->
+      PinnedNoteStore(context).acknowledgeActions(ids)
     }
 
     AsyncFunction("getPermissionStatus") {
