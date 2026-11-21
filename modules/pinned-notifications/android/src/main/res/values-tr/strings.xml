@@ -1,0 +1,4 @@
+<resources>
+  <string name="pinned_notes_channel_name">Pin Note</string>
+  <string name="pinned_notes_channel_description">İğnelediğin notlar, Zort\'tan silene kadar bildirim panelinde kalır.</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+  <string name="pinned_notes_channel_name">Pin Note</string>
+  <string name="pinned_notes_channel_description">Your pinned notes, kept in the notification shade until you delete them in Zort.</string>
+</resources>
