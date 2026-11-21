@@ -10,8 +10,10 @@ import { addNoteOpenListener, consumePendingNoteOpen } from '@modules/pinned-not
 import { migrate } from '@/lib/db';
 import { NotesProvider, useNotes } from '@/lib/notes-context';
 import { useStackScreenOptions } from '@/lib/stack-options';
+import { applySavedTheme } from '@/lib/theme-preference';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+applySavedTheme();
 
 // A link into a tool (a Pin Note notification, say) keeps the home screen underneath
 export const unstable_settings = { anchor: 'index' };

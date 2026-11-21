@@ -24,6 +24,8 @@
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@types/react": "~19.3.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -33,7 +35,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "build:apk": "expo prebuild --platform android && cd android && gradlew.bat assembleRelease",
-    "icons": "node scripts/make-icons.mjs ../zort.ing/public/favicon.svg assets"
+    "icons": "node scripts/make-icons.mjs ../zort.ing/public/favicon.svg assets",
+    "wordmark": "node scripts/make-wordmark.mjs ../zort.ing/index.html assets"
   },
   "private": true
 }

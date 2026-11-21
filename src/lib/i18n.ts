@@ -2,7 +2,7 @@ import { getLocales } from 'expo-localization';
 
 const en = {
   pinNoteTitle: 'Pin Note',
-  homeSubtitle: 'Your tools',
+  darkTheme: 'Dark theme',
   pinNoteDescription: 'Pin notes to your notifications. They stay there until you delete them.',
   pinNoteEmpty: 'No notes pinned yet',
   pinNoteCountOne: '1 note pinned',
@@ -42,7 +42,7 @@ type Strings = { [K in keyof typeof en]: string };
 
 const tr: Strings = {
   pinNoteTitle: 'Pin Note',
-  homeSubtitle: 'Araçların',
+  darkTheme: 'Koyu tema',
   pinNoteDescription: 'Notlarını bildirimlere iğnele. Sen silene kadar orada kalırlar.',
   pinNoteEmpty: 'Henüz iğnelenmiş not yok',
   pinNoteCountOne: '1 not iğnelendi',

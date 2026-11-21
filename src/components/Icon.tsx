@@ -8,6 +8,8 @@ const icons = {
   notificationsOff: { ios: 'bell.slash.fill', android: 'notifications_off' },
   delete: { ios: 'trash', android: 'delete' },
   chevron: { ios: 'chevron.right', android: 'chevron_right' },
+  sun: { ios: 'sun.max.fill', android: 'light_mode' },
+  moon: { ios: 'moon.fill', android: 'dark_mode' },
 } satisfies Record<string, Extract<SymbolViewProps['name'], object>>;
 
 export type IconName = keyof typeof icons;

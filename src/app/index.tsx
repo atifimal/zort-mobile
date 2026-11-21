@@ -1,8 +1,9 @@
 import { router, type Href } from 'expo-router';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/Icon';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { t } from '@/lib/i18n';
 import { useNotes } from '@/lib/notes-context';
 import { radius, spacing, useColors } from '@/lib/theme';
@@ -20,6 +21,7 @@ type Tool = {
 /** Zort's home: the menu of tools. Pin Note is the first; new tools are added to this list. */
 export default function HomeScreen() {
   const colors = useColors();
+  const dark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
   const { notes, permission } = useNotes();
 
@@ -49,12 +51,17 @@ export default function HomeScreen() {
       ]}
     >
       <View style={styles.header}>
-        <Image source={require('../../assets/logo.png')} style={styles.logo} accessibilityIgnoresInvertColors />
-        <View>
-          <Text style={[styles.brand, { color: colors.text }]} accessibilityRole="header">
-            Zort
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('homeSubtitle')}</Text>
+        <Image
+          source={dark ? require('../../assets/wordmark-dark.png') : require('../../assets/wordmark-light.png')}
+          style={styles.wordmark}
+          resizeMode="contain"
+          accessible
+          accessibilityRole="header"
+          accessibilityLabel="Zort"
+          accessibilityIgnoresInvertColors
+        />
+        <View style={styles.themeToggle}>
+          <ThemeToggle />
         </View>
       </View>
 
@@ -104,10 +111,11 @@ function ToolCard({ tool }: { tool: Tool }) {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg, gap: spacing.xl },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xs },
-  logo: { width: 56, height: 56 },
-  brand: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, marginTop: -2 },
+  // The wordmark sits in the middle; the theme switch is pinned to the right without pushing it off-centre
+  header: { alignItems: 'center', justifyContent: 'center' },
+  // Explicit size (the PNG is 720×362): with only aspectRatio, Android drew it at its pixel size
+  wordmark: { width: 168, height: Math.round((168 * 362) / 720) },
+  themeToggle: { position: 'absolute', right: 0, top: 0 },
   tools: { gap: spacing.md },
   card: {
     flexDirection: 'row',
