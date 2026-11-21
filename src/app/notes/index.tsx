@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { Icon } from '@/components/Icon';
 import { MemoCard } from '@/components/MemoCard';
 import { useToast } from '@/components/Toast';
 import { copyText } from '@/lib/clipboard';
+import { animateReorder, favoritesFirst } from '@/lib/favorites';
 import { t } from '@/lib/i18n';
 import { useMemos } from '@/lib/memos-context';
 import type { Memo } from '@/lib/memos-db';
@@ -21,11 +23,21 @@ const memoText = (memo: Memo) => (memo.body ? `${memo.title}\n\n${memo.body}` : 
 export default function NotesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { memos, loaded, removeMemo } = useMemos();
+  const { memos, loaded, setFavorite, removeMemo } = useMemos();
+  const sorted = useMemo(() => favoritesFirst(memos), [memos]);
   const { toast, show } = useToast();
   const [selected, setSelected] = useState<Memo | null>(null);
 
   const showActions = useCallback((memo: Memo) => setSelected(memo), []);
+
+  const toggleFavorite = useCallback(
+    (memo: Memo) => {
+      Haptics.selectionAsync().catch(() => {});
+      animateReorder();
+      setFavorite(memo.id, !memo.favorite).catch(() => Alert.alert(t('saveFailed')));
+    },
+    [setFavorite],
+  );
 
   const addMemo = useCallback(() => {
     router.push({ pathname: '/notes/[id]', params: { id: 'new' } });
@@ -37,6 +49,12 @@ export default function NotesScreen() {
       label: t('copyNote'),
       icon: 'copy',
       onPress: () => copyText(memoText(memo), () => show(t('noteCopied'))).catch(() => Alert.alert(t('copyNoteFailed'))),
+    },
+    {
+      key: 'favorite',
+      label: memo.favorite ? t('removeFavorite') : t('addFavorite'),
+      icon: memo.favorite ? 'starFill' : 'star',
+      onPress: () => toggleFavorite(memo),
     },
     {
       key: 'edit',
@@ -66,9 +84,9 @@ export default function NotesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        data={memos}
+        data={sorted}
         keyExtractor={(memo) => memo.id}
-        renderItem={({ item }) => <MemoCard memo={item} onPress={showActions} />}
+        renderItem={({ item }) => <MemoCard memo={item} onPress={showActions} onToggleFavorite={toggleFavorite} />}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.list,

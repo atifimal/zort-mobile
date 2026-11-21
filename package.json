@@ -28,6 +28,7 @@
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "subset-font": "^2.9.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -38,6 +39,7 @@
     "lint": "expo lint",
     "build:apk": "expo prebuild --platform android && cd android && .\\gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a \"-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\"",
     "icons": "node scripts/make-icons.mjs ../zort.ing/public/favicon.svg assets",
+    "star-font": "node scripts/make-star-font.mjs",
     "wordmark": "node scripts/make-wordmark.mjs ../zort.ing/index.html assets"
   },
   "private": true

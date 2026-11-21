@@ -22,7 +22,16 @@ import {
   type PermissionStatus,
 } from '@modules/pinned-notifications';
 
-import { deleteNote, insertNote, listNotes, setNotePinned, updateNote, type Note, type PinWindow } from './db';
+import {
+  deleteNote,
+  insertNote,
+  listNotes,
+  setFavorite as setRowFavorite,
+  setNotePinned,
+  updateNote,
+  type Note,
+  type PinWindow,
+} from './db';
 import { nextStatusChange } from './pin-status';
 
 export type NoteInput = { title: string; body: string; pinned: boolean; window: PinWindow | null };
@@ -36,6 +45,7 @@ type NotesContextValue = {
   createNote(input: NoteInput): Promise<Note>;
   editNote(id: string, input: NoteInput): Promise<void>;
   setPinned(id: string, pinned: boolean): Promise<void>;
+  setFavorite(id: string, favorite: boolean): Promise<void>;
   removeNote(id: string): Promise<void>;
   requestPermission(): Promise<void>;
 };
@@ -183,7 +193,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const createNote = useCallback(
     async (input: NoteInput) => {
       const time = Date.now();
-      const note: Note = { id: randomUUID(), ...normalize(input), createdAt: time, updatedAt: time };
+      const note: Note = { id: randomUUID(), ...normalize(input), favorite: false, createdAt: time, updatedAt: time };
       await insertNote(db, note);
       commit([note, ...notesRef.current]);
       setNow(time);
@@ -222,6 +232,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     [db, commit],
   );
 
+  const setFavorite = useCallback(
+    async (id: string, favorite: boolean) => {
+      await setRowFavorite(db, 'notes', id, favorite);
+      commit(notesRef.current.map((note) => (note.id === id ? { ...note, favorite } : note)));
+    },
+    [db, commit],
+  );
+
   const removeNote = useCallback(
     async (id: string) => {
       await deleteNote(db, id);
@@ -231,8 +249,19 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ notes, loaded, permission, now, createNote, editNote, setPinned, removeNote, requestPermission }),
-    [notes, loaded, permission, now, createNote, editNote, setPinned, removeNote, requestPermission],
+    () => ({
+      notes,
+      loaded,
+      permission,
+      now,
+      createNote,
+      editNote,
+      setPinned,
+      setFavorite,
+      removeNote,
+      requestPermission,
+    }),
+    [notes, loaded, permission, now, createNote, editNote, setPinned, setFavorite, removeNote, requestPermission],
   );
 
   return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;

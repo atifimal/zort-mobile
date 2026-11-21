@@ -3,6 +3,16 @@
 zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pin Note**, **Links** ve **Notes**; yenileri
 aynı menüye eklenir (`src/app/index.tsx` içindeki `tools` listesi).
 
+Üç listede de **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
+favoriler listenin en üstünde durur; kendi aralarında ve geri kalanlarda listenin normal
+sıralaması korunur (`src/lib/favorites.ts`, v5: her tabloda `favorite` sütunu). Favori yapmak
+düzenleme sayılmaz, notun düzenleme tarihini değiştirmez. Pin Note'ta sıra: favoriler, sonra
+iğneliler, sonra iğnesizler (her grupta en yeni üstte).
+
+Android'de `expo-symbols` ikonları içi boş Material Symbols fontuyla çiziyor. Favorinin dolu
+yıldızı için dolu fonttan yalnızca yıldız glifi alınıp `assets/fonts/star-filled.ttf`'e
+konuyor (1,6 KB; fontun tamamı 1,4 MB). Yeniden üretmek için: `npm run star-font`.
+
 ## Pin Note
 
 İğnelediğin her not ayrı bir bildirim olarak durur ve iğnesini kaldırana (ya da silene) kadar

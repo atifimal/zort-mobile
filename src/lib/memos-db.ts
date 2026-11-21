@@ -8,16 +8,19 @@ export type Memo = {
   id: string;
   title: string;
   body: string;
+  /** Shown at the top of the list. */
+  favorite: boolean;
   createdAt: number;
   updatedAt: number;
 };
 
-type MemoRow = { id: string; title: string; body: string; created_at: number; updated_at: number };
+type MemoRow = { id: string; title: string; body: string; favorite: number; created_at: number; updated_at: number };
 
 const fromRow = (row: MemoRow): Memo => ({
   id: row.id,
   title: row.title,
   body: row.body,
+  favorite: row.favorite !== 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -30,10 +33,11 @@ export async function listMemos(db: SQLiteDatabase): Promise<Memo[]> {
 
 export async function insertMemo(db: SQLiteDatabase, memo: Memo): Promise<void> {
   await db.runAsync(
-    'INSERT INTO memos (id, title, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO memos (id, title, body, favorite, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
     memo.id,
     memo.title,
     memo.body,
+    memo.favorite ? 1 : 0,
     memo.createdAt,
     memo.updatedAt,
   );

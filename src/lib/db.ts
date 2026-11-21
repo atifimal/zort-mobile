@@ -10,6 +10,8 @@ export type Note = {
   /** Shown in notifications (within `window`, if it has one). */
   pinned: boolean;
   window: PinWindow | null;
+  /** Shown at the top of the list. */
+  favorite: boolean;
   createdAt: number;
   updatedAt: number;
 };
@@ -19,13 +21,22 @@ type NoteRow = {
   title: string;
   body: string;
   pinned: number;
+  favorite: number;
   pin_start: number | null;
   pin_end: number | null;
   created_at: number;
   updated_at: number;
 };
 
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
+
+/** The tables whose rows can be marked as favorites (all with a `favorite` column, v5). */
+export type FavoriteTable = 'notes' | 'links' | 'memos';
+
+/** Doesn't touch updated_at: marking a favorite isn't an edit. */
+export async function setFavorite(db: SQLiteDatabase, table: FavoriteTable, id: string, favorite: boolean) {
+  await db.runAsync(`UPDATE ${table} SET favorite = ? WHERE id = ?`, favorite ? 1 : 0, id);
+}
 
 /** Runs on open; brings the schema up to DATABASE_VERSION one step at a time. */
 export async function migrate(db: SQLiteDatabase): Promise<void> {
@@ -97,6 +108,19 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
     version = 4;
   }
 
+  if (version === 4) {
+    // Favorites, shown at the top of each list
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        ALTER TABLE notes ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE links ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE memos ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
+        PRAGMA user_version = 5;
+      `);
+    });
+    version = 5;
+  }
+
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
 
@@ -106,6 +130,7 @@ const fromRow = (row: NoteRow): Note => ({
   body: row.body,
   pinned: row.pinned !== 0,
   window: row.pin_start !== null && row.pin_end !== null ? { start: row.pin_start, end: row.pin_end } : null,
+  favorite: row.favorite !== 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -117,12 +142,13 @@ export async function listNotes(db: SQLiteDatabase): Promise<Note[]> {
 
 export async function insertNote(db: SQLiteDatabase, note: Note): Promise<void> {
   await db.runAsync(
-    `INSERT INTO notes (id, title, body, pinned, pin_start, pin_end, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO notes (id, title, body, pinned, favorite, pin_start, pin_end, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     note.id,
     note.title,
     note.body,
     note.pinned ? 1 : 0,
+    note.favorite ? 1 : 0,
     note.window?.start ?? null,
     note.window?.end ?? null,
     note.createdAt,

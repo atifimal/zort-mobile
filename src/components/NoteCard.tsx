@@ -6,6 +6,7 @@ import { t } from '@/lib/i18n';
 import { formatDateTime, pinStatus, type PinStatus } from '@/lib/pin-status';
 import { radius, spacing, useColors } from '@/lib/theme';
 
+import { FavoriteButton } from './FavoriteButton';
 import { Icon } from './Icon';
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
   onPress: (note: Note) => void;
   onLongPress: (note: Note) => void;
   onTogglePin: (note: Note) => void;
+  onToggleFavorite: (note: Note) => void;
 };
 
 /** What the card says about the note's notification; nothing when it's simply always shown. */
@@ -32,7 +34,14 @@ function statusText(note: Note, status: PinStatus): string | null {
   }
 }
 
-export const NoteCard = memo(function NoteCard({ note, now, onPress, onLongPress, onTogglePin }: Props) {
+export const NoteCard = memo(function NoteCard({
+  note,
+  now,
+  onPress,
+  onLongPress,
+  onTogglePin,
+  onToggleFavorite,
+}: Props) {
   const colors = useColors();
   const status = pinStatus(note, now);
   const shown = status === 'always' || status === 'active';
@@ -73,24 +82,27 @@ export const NoteCard = memo(function NoteCard({ note, now, onPress, onLongPress
         ) : null}
       </View>
 
-      {/* Its own target: pin or unpin without opening the note */}
-      <Pressable
-        onPress={() => onTogglePin(note)}
-        hitSlop={8}
-        accessibilityRole="switch"
-        accessibilityLabel={note.pinned ? t('unpin') : t('pin')}
-        accessibilityState={{ checked: note.pinned }}
-        style={({ pressed }) => [
-          styles.pinButton,
-          { backgroundColor: note.pinned ? colors.accentSoft : colors.background, opacity: pressed ? 0.6 : 1 },
-        ]}
-      >
-        <Icon
-          name={note.pinned ? 'pin' : 'pinOff'}
-          size={20}
-          color={shown ? colors.accent : note.pinned ? colors.textSecondary : colors.textTertiary}
-        />
-      </Pressable>
+      <View style={styles.buttons}>
+        <FavoriteButton favorite={note.favorite} onPress={() => onToggleFavorite(note)} />
+        {/* Its own target: pin or unpin without opening the note */}
+        <Pressable
+          onPress={() => onTogglePin(note)}
+          hitSlop={8}
+          accessibilityRole="switch"
+          accessibilityLabel={note.pinned ? t('unpin') : t('pin')}
+          accessibilityState={{ checked: note.pinned }}
+          style={({ pressed }) => [
+            styles.pinButton,
+            { backgroundColor: note.pinned ? colors.accentSoft : colors.background, opacity: pressed ? 0.6 : 1 },
+          ]}
+        >
+          <Icon
+            name={note.pinned ? 'pin' : 'pinOff'}
+            size={20}
+            color={shown ? colors.accent : note.pinned ? colors.textSecondary : colors.textTertiary}
+          />
+        </Pressable>
+      </View>
     </Pressable>
   );
 });
@@ -109,13 +121,6 @@ const styles = StyleSheet.create({
   body: { fontSize: 15, lineHeight: 21 },
   status: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
   statusText: { flexShrink: 1, fontSize: 13, fontWeight: '500' },
-  pinButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -spacing.xs,
-    marginRight: -spacing.xs,
-  },
+  buttons: { flexDirection: 'row', gap: spacing.xs, marginTop: -spacing.xs, marginRight: -spacing.xs },
+  pinButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

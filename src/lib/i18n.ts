@@ -3,7 +3,7 @@ import { getLocales } from 'expo-localization';
 const en = {
   pinNoteTitle: 'Pin Note',
   darkTheme: 'Dark theme',
-  pinNoteDescription: 'Pin notes to your notifications, all the time or between two times.',
+  pinNoteDescription: 'Pin notes to your notifications',
   pinNoteEmpty: 'No notes pinned yet',
   pinNoteCountOne: '1 note in notifications',
   pinNoteCountMany: '{n} notes in notifications',
@@ -54,7 +54,7 @@ const en = {
   windowInvalid: 'The end must be after the start.',
   windowEnded: 'This time range is already over, so the note wouldn’t be shown.',
   linksTitle: 'Links',
-  linksDescription: 'Save links and open them in your browser.',
+  linksDescription: 'Save links and open them',
   linksEmpty: 'No links saved yet',
   linksCountOne: '1 link',
   linksCountMany: '{n} links',
@@ -81,7 +81,7 @@ const en = {
   discardLinkMessage: 'Your changes to this link will be lost.',
   moreOptions: 'More options',
   notesTitle: 'Notes',
-  notesDescription: 'Write notes with a title and a description.',
+  notesDescription: 'Notes that stay in the app',
   notesEmpty: 'No notes yet',
   notesEmptyMessage: 'Tap a note to copy, edit or delete it.',
   copyNote: 'Copy note',
@@ -89,6 +89,9 @@ const en = {
   copyNoteFailed: 'The note could not be copied.',
   deleteMemoTitle: 'Delete this note?',
   editedAt: 'Edited {date}',
+  favorite: 'Favorite',
+  addFavorite: 'Add to favorites',
+  removeFavorite: 'Remove from favorites',
 } as const;
 
 type Strings = { [K in keyof typeof en]: string };
@@ -96,7 +99,7 @@ type Strings = { [K in keyof typeof en]: string };
 const tr: Strings = {
   pinNoteTitle: 'Pin Note',
   darkTheme: 'Koyu tema',
-  pinNoteDescription: 'Notlarını bildirimlere iğnele; her zaman ya da iki tarih arasında.',
+  pinNoteDescription: 'Notlarını bildirimlere iğnele',
   pinNoteEmpty: 'Henüz iğnelenmiş not yok',
   pinNoteCountOne: 'Bildirimlerde 1 not',
   pinNoteCountMany: 'Bildirimlerde {n} not',
@@ -147,7 +150,7 @@ const tr: Strings = {
   windowInvalid: 'Bitiş, başlangıçtan sonra olmalı.',
   windowEnded: 'Bu zaman aralığı çoktan bitti, not hiç görünmezdi.',
   linksTitle: 'Linkler',
-  linksDescription: 'Linklerini kaydet, tarayıcında aç.',
+  linksDescription: 'Linklerini kaydet, tarayıcında aç',
   linksEmpty: 'Henüz kayıtlı link yok',
   linksCountOne: '1 link',
   linksCountMany: '{n} link',
@@ -174,7 +177,7 @@ const tr: Strings = {
   discardLinkMessage: 'Bu linkte yaptığın değişiklikler kaybolacak.',
   moreOptions: 'Diğer seçenekler',
   notesTitle: 'Notlar',
-  notesDescription: 'Başlık ve açıklamayla notlar al.',
+  notesDescription: 'Uygulamada duran notlar',
   notesEmpty: 'Henüz not yok',
   notesEmptyMessage: 'Kopyalamak, düzenlemek ya da silmek için bir nota dokun.',
   copyNote: 'Notu kopyala',
@@ -182,6 +185,9 @@ const tr: Strings = {
   copyNoteFailed: 'Not kopyalanamadı.',
   deleteMemoTitle: 'Bu not silinsin mi?',
   editedAt: '{date} düzenlendi',
+  favorite: 'Favori',
+  addFavorite: 'Favorilere ekle',
+  removeFavorite: 'Favorilerden çıkar',
 };
 
 const dictionaries: Record<string, Strings> = { en, tr };

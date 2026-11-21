@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { Icon } from '@/components/Icon';
 import { LinkCard } from '@/components/LinkCard';
 import { useToast } from '@/components/Toast';
 import { copyText } from '@/lib/clipboard';
+import { animateReorder, favoritesFirst } from '@/lib/favorites';
 import { t } from '@/lib/i18n';
 import { useLinks } from '@/lib/links-context';
 import type { Link } from '@/lib/links-db';
@@ -20,7 +22,8 @@ const FAB_SIZE = 60;
 export default function LinksScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { links, loaded, removeLink } = useLinks();
+  const { links, loaded, setFavorite, removeLink } = useLinks();
+  const sorted = useMemo(() => favoritesFirst(links), [links]);
   const privateBrowser = usePrivateBrowser();
   const { toast, show } = useToast();
   const [selected, setSelected] = useState<Link | null>(null);
@@ -31,6 +34,15 @@ export default function LinksScreen() {
 
   // A tap shows the actions; opening in the browser is one of them
   const showActions = useCallback((link: Link) => setSelected(link), []);
+
+  const toggleFavorite = useCallback(
+    (link: Link) => {
+      Haptics.selectionAsync().catch(() => {});
+      animateReorder();
+      setFavorite(link.id, !link.favorite).catch(() => Alert.alert(t('saveFailed')));
+    },
+    [setFavorite],
+  );
 
   const addLink = useCallback(() => {
     router.push({ pathname: '/links/[id]', params: { id: 'new' } });
@@ -54,6 +66,12 @@ export default function LinksScreen() {
       label: t('copyLink'),
       icon: 'copy',
       onPress: () => copyText(link.url, () => show(t('linkCopied'))).catch(() => Alert.alert(t('copyFailed'))),
+    },
+    {
+      key: 'favorite',
+      label: link.favorite ? t('removeFavorite') : t('addFavorite'),
+      icon: link.favorite ? 'starFill' : 'star',
+      onPress: () => toggleFavorite(link),
     },
     {
       key: 'edit',
@@ -83,9 +101,9 @@ export default function LinksScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        data={links}
+        data={sorted}
         keyExtractor={(link) => link.id}
-        renderItem={({ item }) => <LinkCard link={item} onPress={showActions} />}
+        renderItem={({ item }) => <LinkCard link={item} onPress={showActions} onToggleFavorite={toggleFavorite} />}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.list,

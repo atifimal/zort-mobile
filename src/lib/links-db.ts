@@ -5,16 +5,19 @@ export type Link = {
   url: string;
   /** Optional; the list shows the address when it's empty. */
   title: string;
+  /** Shown at the top of the list. */
+  favorite: boolean;
   createdAt: number;
   updatedAt: number;
 };
 
-type LinkRow = { id: string; url: string; title: string; created_at: number; updated_at: number };
+type LinkRow = { id: string; url: string; title: string; favorite: number; created_at: number; updated_at: number };
 
 const fromRow = (row: LinkRow): Link => ({
   id: row.id,
   url: row.url,
   title: row.title,
+  favorite: row.favorite !== 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -26,10 +29,11 @@ export async function listLinks(db: SQLiteDatabase): Promise<Link[]> {
 
 export async function insertLink(db: SQLiteDatabase, link: Link): Promise<void> {
   await db.runAsync(
-    'INSERT INTO links (id, url, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO links (id, url, title, favorite, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
     link.id,
     link.url,
     link.title,
+    link.favorite ? 1 : 0,
     link.createdAt,
     link.updatedAt,
   );

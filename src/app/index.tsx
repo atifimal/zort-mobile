@@ -122,11 +122,15 @@ function ToolCard({ tool }: { tool: Tool }) {
       ]}
     >
       <View style={[styles.cardIcon, { backgroundColor: colors.accentSoft }]}>
-        <Icon name={tool.icon} size={24} color={colors.accent} />
+        <Icon name={tool.icon} size={20} color={colors.accent} />
       </View>
       <View style={styles.cardText}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{tool.title}</Text>
-        <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{tool.description}</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+          {tool.title}
+        </Text>
+        <Text style={[styles.cardDescription, { color: colors.textSecondary }]} numberOfLines={1}>
+          {tool.description}
+        </Text>
         <View style={styles.cardMeta}>
           {tool.status ? (
             <Text style={[styles.cardStatus, { color: colors.textTertiary }]}>{tool.status}</Text>
@@ -150,20 +154,21 @@ const styles = StyleSheet.create({
   // Explicit size (the PNG is 720×362): with only aspectRatio, Android drew it at its pixel size
   wordmark: { width: 168, height: Math.round((168 * 362) / 720) },
   themeToggle: { position: 'absolute', right: 0, top: 0 },
-  tools: { gap: spacing.md },
+  tools: { gap: spacing.sm + 2 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
-    padding: spacing.lg,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  cardIcon: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  cardText: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: 17, fontWeight: '600' },
-  cardDescription: { fontSize: 14, lineHeight: 20 },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
+  cardIcon: { width: 40, height: 40, borderRadius: radius.md - 2, alignItems: 'center', justifyContent: 'center' },
+  cardText: { flex: 1, gap: 1 },
+  cardTitle: { fontSize: 16, fontWeight: '600' },
+  cardDescription: { fontSize: 13, lineHeight: 18 },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: 2 },
   cardStatus: { fontSize: 13, fontWeight: '500' },
   warning: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill },
   warningText: { fontSize: 12, fontWeight: '600' },

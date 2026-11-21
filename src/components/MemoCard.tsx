@@ -6,15 +6,17 @@ import type { Memo } from '@/lib/memos-db';
 import { formatDateTime } from '@/lib/pin-status';
 import { radius, spacing, useColors } from '@/lib/theme';
 
+import { FavoriteButton } from './FavoriteButton';
 import { Icon } from './Icon';
 
 type Props = {
   memo: Memo;
   /** Opens the note's actions (copy, edit, delete). */
   onPress: (memo: Memo) => void;
+  onToggleFavorite: (memo: Memo) => void;
 };
 
-export const MemoCard = memo(function MemoCard({ memo, onPress }: Props) {
+export const MemoCard = memo(function MemoCard({ memo, onPress, onToggleFavorite }: Props) {
   const colors = useColors();
   const edited = t('editedAt', { date: formatDateTime(memo.updatedAt) });
 
@@ -43,7 +45,10 @@ export const MemoCard = memo(function MemoCard({ memo, onPress }: Props) {
           {edited}
         </Text>
       </View>
-      <Icon name="more" size={18} color={colors.textTertiary} />
+      <View style={styles.trailing}>
+        <FavoriteButton favorite={memo.favorite} onPress={() => onToggleFavorite(memo)} />
+        <Icon name="more" size={18} color={colors.textTertiary} />
+      </View>
     </Pressable>
   );
 });
@@ -61,4 +66,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '600', lineHeight: 22 },
   body: { fontSize: 15, lineHeight: 21 },
   date: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  trailing: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: -spacing.sm },
 });

@@ -16,6 +16,8 @@ const light = {
   danger: '#D1242F',
   warningSurface: '#FFF8C5',
   warningText: '#7D4E00',
+  favorite: '#BF8700',
+  favoriteSoft: '#FFF8C5',
 };
 
 export type Colors = typeof light;
@@ -35,6 +37,8 @@ const dark: Colors = {
   danger: '#F85149',
   warningSurface: '#2E2410',
   warningText: '#D29922',
+  favorite: '#E3B341',
+  favoriteSoft: '#2E2410',
 };
 
 export function useColors(): Colors {

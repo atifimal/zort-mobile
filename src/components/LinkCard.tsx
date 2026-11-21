@@ -6,15 +6,17 @@ import type { Link } from '@/lib/links-db';
 import { radius, spacing, useColors } from '@/lib/theme';
 import { displayHost, displayUrl, siteName } from '@/lib/url';
 
+import { FavoriteButton } from './FavoriteButton';
 import { Icon } from './Icon';
 
 type Props = {
   link: Link;
   /** Opens the link's actions (open, private tab, copy, edit, delete). */
   onPress: (link: Link) => void;
+  onToggleFavorite: (link: Link) => void;
 };
 
-export const LinkCard = memo(function LinkCard({ link, onPress }: Props) {
+export const LinkCard = memo(function LinkCard({ link, onPress, onToggleFavorite }: Props) {
   const colors = useColors();
   const host = displayHost(link.url);
   const title = link.title || host;
@@ -44,6 +46,7 @@ export const LinkCard = memo(function LinkCard({ link, onPress }: Props) {
           {displayUrl(link.url)}
         </Text>
       </View>
+      <FavoriteButton favorite={link.favorite} onPress={() => onToggleFavorite(link)} />
       <Icon name="more" size={18} color={colors.textTertiary} />
     </Pressable>
   );

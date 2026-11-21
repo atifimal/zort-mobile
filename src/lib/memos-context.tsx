@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { setFavorite as setRowFavorite } from './db';
 import { deleteMemo, insertMemo, listMemos, updateMemo, type Memo } from './memos-db';
 
 export type MemoInput = { title: string; body: string };
@@ -11,6 +12,7 @@ type MemosContextValue = {
   loaded: boolean;
   createMemo(input: MemoInput): Promise<Memo>;
   editMemo(id: string, input: MemoInput): Promise<void>;
+  setFavorite(id: string, favorite: boolean): Promise<void>;
   removeMemo(id: string): Promise<void>;
 };
 
@@ -50,6 +52,7 @@ export function MemosProvider({ children }: { children: ReactNode }) {
         id: randomUUID(),
         title: input.title.trim(),
         body: input.body.trim(),
+        favorite: false,
         createdAt: now,
         updatedAt: now,
       };
@@ -72,6 +75,15 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     [db, commit],
   );
 
+  // Not an edit: the note keeps its place among the others (updatedAt is unchanged)
+  const setFavorite = useCallback(
+    async (id: string, favorite: boolean) => {
+      await setRowFavorite(db, 'memos', id, favorite);
+      commit(memosRef.current.map((memo) => (memo.id === id ? { ...memo, favorite } : memo)));
+    },
+    [db, commit],
+  );
+
   const removeMemo = useCallback(
     async (id: string) => {
       await deleteMemo(db, id);
@@ -81,8 +93,8 @@ export function MemosProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ memos, loaded, createMemo, editMemo, removeMemo }),
-    [memos, loaded, createMemo, editMemo, removeMemo],
+    () => ({ memos, loaded, createMemo, editMemo, setFavorite, removeMemo }),
+    [memos, loaded, createMemo, editMemo, setFavorite, removeMemo],
   );
 
   return <MemosContext.Provider value={value}>{children}</MemosContext.Provider>;

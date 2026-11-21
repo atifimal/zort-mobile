@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +8,7 @@ import { Icon } from '@/components/Icon';
 import { NoteCard } from '@/components/NoteCard';
 import { PermissionBanner } from '@/components/PermissionBanner';
 import type { Note } from '@/lib/db';
+import { animateReorder } from '@/lib/favorites';
 import { t } from '@/lib/i18n';
 import { useNotes } from '@/lib/notes-context';
 import { isShown } from '@/lib/pin-status';
@@ -18,7 +19,16 @@ const FAB_SIZE = 60;
 export default function NotesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { notes, loaded, permission, now, removeNote, setPinned, requestPermission } = useNotes();
+  const { notes, loaded, permission, now, removeNote, setPinned, setFavorite, requestPermission } = useNotes();
+  // Favorites, then pinned notes, then the rest; each group keeps the newest first
+  const sorted = useMemo(() => {
+    const others = notes.filter((note) => !note.favorite);
+    return [
+      ...notes.filter((note) => note.favorite),
+      ...others.filter((note) => note.pinned),
+      ...others.filter((note) => !note.pinned),
+    ];
+  }, [notes]);
 
   const openNote = useCallback((note: Note) => {
     router.push({ pathname: '/pin-notes/[id]', params: { id: note.id } });
@@ -46,9 +56,20 @@ export default function NotesScreen() {
   const togglePin = useCallback(
     (note: Note) => {
       Haptics.selectionAsync().catch(() => {});
+      // Pinning moves the note between groups
+      if (!note.favorite) animateReorder();
       setPinned(note.id, !note.pinned).catch(() => Alert.alert(t('saveFailed')));
     },
     [setPinned],
+  );
+
+  const toggleFavorite = useCallback(
+    (note: Note) => {
+      Haptics.selectionAsync().catch(() => {});
+      animateReorder();
+      setFavorite(note.id, !note.favorite).catch(() => Alert.alert(t('saveFailed')));
+    },
+    [setFavorite],
   );
 
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
@@ -60,10 +81,17 @@ export default function NotesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        data={notes}
+        data={sorted}
         keyExtractor={(note) => note.id}
         renderItem={({ item }) => (
-          <NoteCard note={item} now={now} onPress={openNote} onLongPress={confirmDelete} onTogglePin={togglePin} />
+          <NoteCard
+            note={item}
+            now={now}
+            onPress={openNote}
+            onLongPress={confirmDelete}
+            onTogglePin={togglePin}
+            onToggleFavorite={toggleFavorite}
+          />
         )}
         extraData={now}
         contentInsetAdjustmentBehavior="automatic"

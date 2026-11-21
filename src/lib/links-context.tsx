@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { setFavorite as setRowFavorite } from './db';
 import { deleteLink, insertLink, listLinks, updateLink, type Link } from './links-db';
 
 /** `url` already normalized (see normalizeUrl). */
@@ -12,6 +13,7 @@ type LinksContextValue = {
   loaded: boolean;
   createLink(input: LinkInput): Promise<Link>;
   editLink(id: string, input: LinkInput): Promise<void>;
+  setFavorite(id: string, favorite: boolean): Promise<void>;
   removeLink(id: string): Promise<void>;
 };
 
@@ -47,7 +49,14 @@ export function LinksProvider({ children }: { children: ReactNode }) {
   const createLink = useCallback(
     async (input: LinkInput) => {
       const now = Date.now();
-      const link: Link = { id: randomUUID(), url: input.url, title: input.title.trim(), createdAt: now, updatedAt: now };
+      const link: Link = {
+        id: randomUUID(),
+        url: input.url,
+        title: input.title.trim(),
+        favorite: false,
+        createdAt: now,
+        updatedAt: now,
+      };
       await insertLink(db, link);
       commit([link, ...linksRef.current]);
       return link;
@@ -66,6 +75,14 @@ export function LinksProvider({ children }: { children: ReactNode }) {
     [db, commit],
   );
 
+  const setFavorite = useCallback(
+    async (id: string, favorite: boolean) => {
+      await setRowFavorite(db, 'links', id, favorite);
+      commit(linksRef.current.map((link) => (link.id === id ? { ...link, favorite } : link)));
+    },
+    [db, commit],
+  );
+
   const removeLink = useCallback(
     async (id: string) => {
       await deleteLink(db, id);
@@ -75,8 +92,8 @@ export function LinksProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ links, loaded, createLink, editLink, removeLink }),
-    [links, loaded, createLink, editLink, removeLink],
+    () => ({ links, loaded, createLink, editLink, setFavorite, removeLink }),
+    [links, loaded, createLink, editLink, setFavorite, removeLink],
   );
 
   return <LinksContext.Provider value={value}>{children}</LinksContext.Provider>;
