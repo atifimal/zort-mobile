@@ -13,6 +13,7 @@ import { t } from '@/lib/i18n';
 import { LinksProvider } from '@/lib/links-context';
 import { MemosProvider } from '@/lib/memos-context';
 import { NotesProvider, useNotes } from '@/lib/notes-context';
+import { TasksProvider } from '@/lib/tasks-context';
 import { useStackScreenOptions } from '@/lib/stack-options';
 import { applySavedTheme } from '@/lib/theme-preference';
 
@@ -34,16 +35,19 @@ export default function RootLayout() {
         <NotesProvider>
           <LinksProvider>
             <MemosProvider>
-              <HideSplashWhenLoaded />
-              <OpenNotesFromNotifications />
-              <StatusBar style="auto" />
-              <Stack screenOptions={screenOptions}>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="pin-notes" options={{ headerShown: false }} />
-                <Stack.Screen name="links" options={{ headerShown: false }} />
-                <Stack.Screen name="notes" options={{ headerShown: false }} />
-                <Stack.Screen name="backup" options={{ title: t('backupTitle') }} />
-              </Stack>
+              <TasksProvider>
+                <HideSplashWhenLoaded />
+                <OpenNotesFromNotifications />
+                <StatusBar style="auto" />
+                <Stack screenOptions={screenOptions}>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="pin-notes" options={{ headerShown: false }} />
+                  <Stack.Screen name="links" options={{ headerShown: false }} />
+                  <Stack.Screen name="notes" options={{ headerShown: false }} />
+                  <Stack.Screen name="tasks" options={{ headerShown: false }} />
+                  <Stack.Screen name="backup" options={{ title: t('backupTitle') }} />
+                </Stack>
+              </TasksProvider>
             </MemosProvider>
           </LinksProvider>
         </NotesProvider>

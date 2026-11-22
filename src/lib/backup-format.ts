@@ -15,7 +15,7 @@
  */
 
 /** The tables that are backed up; a new tool adds its own. */
-export const BACKUP_TABLES = ['notes', 'links', 'memos'] as const;
+export const BACKUP_TABLES = ['notes', 'links', 'memos', 'tasks'] as const;
 
 export type BackupTable = (typeof BACKUP_TABLES)[number];
 export type Row = Record<string, unknown>;
@@ -116,12 +116,13 @@ export function toSqlValue(value: unknown): string | number | null {
   return typeof value === 'string' || typeof value === 'number' ? value : null;
 }
 
-export type Counts = { notes: number; links: number; memos: number };
+export type Counts = { notes: number; links: number; memos: number; tasks: number };
 
 export const countsOf = (tables: Tables): Counts => ({
   notes: tables.notes?.length ?? 0,
   links: tables.links?.length ?? 0,
   memos: tables.memos?.length ?? 0,
+  tasks: tables.tasks?.length ?? 0,
 });
 
 function isObject(value: unknown): value is Record<string, unknown> {

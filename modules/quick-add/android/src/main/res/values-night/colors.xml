@@ -11,4 +11,13 @@
   <color name="qa_link_tile_pressed">#1A4A2A</color>
   <color name="qa_link">#3FB950</color>
   <color name="qa_scrim">#99000000</color>
+  <color name="qa_text">#E6EDF3</color>
+  <color name="qa_text_secondary">#9198A1</color>
+  <color name="qa_text_tertiary">#6E7681</color>
+  <color name="qa_divider">#26E6EDF3</color>
+  <color name="qa_accent">#4493F8</color>
+  <color name="qa_accent_pressed">#2F81F7</color>
+  <color name="qa_on_accent">#FFFFFF</color>
+  <color name="qa_danger">#F85149</color>
+  <color name="qa_row_pressed">#14E6EDF3</color>
 </resources>

@@ -6,6 +6,7 @@ import { makeSnapshot, readSnapshot } from '../backup-format';
 import { DATABASE_VERSION, insertNote, listNotes, migrate, type Note } from '../db';
 import { insertLink, listLinks, type Link } from '../links-db';
 import { insertMemo, listMemos, type Memo } from '../memos-db';
+import { insertTask, listTasks, type Task } from '../tasks-db';
 
 const pinned: Note = {
   id: 'n1',
@@ -20,6 +21,24 @@ const pinned: Note = {
 const unpinned: Note = { ...pinned, id: 'n2', title: 'Later', pinned: false, window: null, favorite: false };
 const link: Link = { id: 'l1', url: 'https://zort.ing/', title: 'Zort', favorite: false, createdAt: 3, updatedAt: 3 };
 const memo: Memo = { id: 'm1', title: 'Shopping', body: 'Milk', favorite: true, createdAt: 4, updatedAt: 5 };
+const task: Task = {
+  id: 't1',
+  title: 'Gym',
+  body: '',
+  due: new Date(2026, 0, 5, 18, 30).getTime(),
+  repeat: {
+    every: 1,
+    unit: 'week',
+    weekdays: [1, 3],
+    start: new Date(2026, 0, 5).getTime(),
+    end: { kind: 'count', count: 10 },
+  },
+  occurrence: 0,
+  completedAt: null,
+  favorite: false,
+  createdAt: 6,
+  updatedAt: 6,
+};
 
 async function freshDatabase() {
   const db = openTestDatabase();
@@ -33,6 +52,7 @@ async function filledDatabase() {
   await insertNote(db, unpinned);
   await insertLink(db, link);
   await insertMemo(db, memo);
+  await insertTask(db, task);
   return db;
 }
 
@@ -47,6 +67,7 @@ describe('Drive backup, through a real database', () => {
     expect(await listNotes(after)).toEqual(await listNotes(before));
     expect(await listLinks(after)).toEqual([link]);
     expect(await listMemos(after)).toEqual([memo]);
+    expect(await listTasks(after)).toEqual([task]);
   });
 
   it('replaces what was on the phone', async () => {
@@ -65,7 +86,7 @@ describe('Drive backup, through a real database', () => {
 
     await restoreSnapshot(phone, older);
 
-    expect(await localCounts(phone)).toEqual({ notes: 0, links: 0, memos: 1 });
+    expect(await localCounts(phone)).toEqual({ notes: 0, links: 0, memos: 1, tasks: 1 });
   });
 
   it('gives a column the backup doesn’t have its default (a backup older than the column)', async () => {
@@ -107,6 +128,6 @@ describe('Drive backup, through a real database', () => {
 
     await expect(restoreSnapshot(phone, broken)).rejects.toThrow();
 
-    expect(await localCounts(phone)).toEqual({ notes: 2, links: 1, memos: 1 });
+    expect(await localCounts(phone)).toEqual({ notes: 2, links: 1, memos: 1, tasks: 1 });
   });
 });

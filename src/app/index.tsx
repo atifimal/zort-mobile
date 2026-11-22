@@ -11,6 +11,8 @@ import { useLinks } from '@/lib/links-context';
 import { useMemos } from '@/lib/memos-context';
 import { useNotes } from '@/lib/notes-context';
 import { isShown } from '@/lib/pin-status';
+import { sectionOf } from '@/lib/task-logic';
+import { useTasks } from '@/lib/tasks-context';
 import { radius, spacing, useColors } from '@/lib/theme';
 
 type Tool = {
@@ -32,6 +34,9 @@ export default function HomeScreen() {
   const { links } = useLinks();
   const { memos } = useMemos();
   const shownCount = notes.filter((note) => isShown(note, now)).length;
+  const { tasks, now: tasksNow } = useTasks();
+  const todoCount = tasks.filter((task) => task.completedAt === null).length;
+  const overdueCount = tasks.filter((task) => sectionOf(task, tasksNow) === 'overdue').length;
 
   const tools: Tool[] = [
     {
@@ -75,6 +80,22 @@ export default function HomeScreen() {
           : links.length === 1
             ? t('linksCountOne')
             : t('linksCountMany', { n: links.length }),
+    },
+    {
+      key: 'tasks',
+      title: t('tasksTitle'),
+      description: t('tasksDescription'),
+      icon: 'task',
+      href: '/tasks',
+      status:
+        tasks.length === 0
+          ? t('tasksEmpty')
+          : todoCount === 0
+            ? t('tasksAllDone')
+            : todoCount === 1
+              ? t('tasksCountOne')
+              : t('tasksCountMany', { n: todoCount }),
+      warning: overdueCount > 0 ? t('tasksOverdue', { n: overdueCount }) : undefined,
     },
   ];
 

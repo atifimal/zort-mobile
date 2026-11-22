@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 4×4 by default; can be resized down to 3×2 or up -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+  android:description="@string/tasks_widget_description"
+  android:initialLayout="@layout/tasks_widget"
+  android:minWidth="250dp"
+  android:minHeight="250dp"
+  android:minResizeWidth="180dp"
+  android:minResizeHeight="110dp"
+  android:previewLayout="@layout/tasks_widget_preview"
+  android:resizeMode="horizontal|vertical"
+  android:targetCellWidth="4"
+  android:targetCellHeight="4"
+  android:updatePeriodMillis="0"
+  android:widgetCategory="home_screen" />

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * providers; without this, the app would keep showing (and syncing notifications from) a list
  * that no longer matches the database.
  */
-export type DataTable = 'notes' | 'links' | 'memos';
+export type DataTable = 'notes' | 'links' | 'memos' | 'tasks';
 
 type Listener = (table: DataTable, source: symbol) => void;
 const listeners = new Set<Listener>();

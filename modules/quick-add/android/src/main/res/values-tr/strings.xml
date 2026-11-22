@@ -6,4 +6,27 @@
   <string name="quick_add_link">Link</string>
   <string name="quick_add_note">Not</string>
   <string name="quick_add_open_app">Zort’u aç</string>
+  <string name="tasks_widget_label">Görevler</string>
+  <string name="tasks_widget_description">Görevlerin, en yakını üstte. Tamamla ya da + ile ekle.</string>
+  <string name="tasks_widget_title">Görevler</string>
+  <string name="tasks_widget_add">Görev ekle</string>
+  <string name="tasks_widget_empty">Yapılacak bir şey yok</string>
+  <string name="tasks_widget_empty_hint">Görev eklemek için + simgesine dokun</string>
+  <string name="tasks_widget_all_done">Hepsi tamam</string>
+  <string name="tasks_widget_count_one">1 görev</string>
+  <string name="tasks_widget_count_many">%d görev</string>
+  <string name="tasks_widget_overdue">· %d gecikmiş</string>
+  <string name="tasks_widget_today">Bugün</string>
+  <string name="tasks_widget_tomorrow">Yarın</string>
+  <string name="tasks_widget_yesterday">Dün</string>
+  <string name="tasks_widget_day_time">%1$s %2$s</string>
+  <string name="tasks_widget_mark_done">“%s” tamamlandı olarak işaretle</string>
+  <string name="tasks_widget_repeats">Yineleniyor</string>
+  <string name="tasks_widget_sample_1">Elektrik faturasını öde</string>
+  <string name="tasks_widget_sample_1_due">Bugün 18:00</string>
+  <string name="tasks_widget_sample_2">Spor</string>
+  <string name="tasks_widget_sample_2_due">Yarın 07:30</string>
+  <string name="tasks_widget_sample_3">Annemi ara</string>
+  <string name="tasks_widget_sample_3_due">Paz 11:00</string>
+  <string name="tasks_widget_sample_count">3 görev</string>
 </resources>

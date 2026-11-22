@@ -27,10 +27,15 @@ export async function takeSnapshot(db: SQLiteDatabase): Promise<Snapshot> {
 export async function localCounts(db: SQLiteDatabase): Promise<Counts> {
   const count = async (table: string) =>
     (await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table}`))?.n ?? 0;
-  return { notes: await count('notes'), links: await count('links'), memos: await count('memos') };
+  return {
+    notes: await count('notes'),
+    links: await count('links'),
+    memos: await count('memos'),
+    tasks: await count('tasks'),
+  };
 }
 
-export const isEmpty = (counts: Counts) => counts.notes + counts.links + counts.memos === 0;
+export const isEmpty = (counts: Counts) => counts.notes + counts.links + counts.memos + counts.tasks === 0;
 
 /**
  * Replaces each backed-up table with the backup's rows, all in one transaction. A table the

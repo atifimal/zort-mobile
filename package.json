@@ -57,6 +57,7 @@
       "/node_modules/",
       "/android/",
       "/ios/"
-    ]
+    ],
+    "globalSetup": "./jest.global-setup.js"
   }
 }

@@ -33,6 +33,12 @@ const icons = {
   starFill: { ios: 'star.fill', android: 'star' },
   sun: { ios: 'sun.max.fill', android: 'light_mode' },
   moon: { ios: 'moon.fill', android: 'dark_mode' },
+  task: { ios: 'checklist', android: 'checklist' },
+  check: { ios: 'checkmark', android: 'check' },
+  repeat: { ios: 'repeat', android: 'repeat' },
+  calendar: { ios: 'calendar', android: 'calendar_today' },
+  minus: { ios: 'minus', android: 'remove' },
+  expand: { ios: 'chevron.down', android: 'expand_more' },
 } satisfies Record<string, Extract<SymbolViewProps['name'], object>>;
 
 export type IconName = keyof typeof icons;

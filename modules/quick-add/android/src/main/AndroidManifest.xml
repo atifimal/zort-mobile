@@ -13,6 +13,39 @@
         android:resource="@xml/quick_add_widget_info" />
     </receiver>
 
+    <!-- The Tasks widget (4×4): the tasks still to do, a check circle on each, and + to add -->
+    <receiver
+      android:name="expo.modules.quickadd.TasksWidgetProvider"
+      android:exported="true"
+      android:label="@string/tasks_widget_label">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <!-- Days and due times move with the clock; labels with the language -->
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.intent.action.LOCALE_CHANGED" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/tasks_widget_info" />
+    </receiver>
+
+    <!-- The rows of the Tasks widget list -->
+    <service
+      android:name="expo.modules.quickadd.TasksWidgetService"
+      android:exported="false"
+      android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+    <!-- Where a tap on a Tasks widget row goes: checks the task off or opens it, never seen -->
+    <activity
+      android:name="expo.modules.quickadd.TaskWidgetActionActivity"
+      android:exported="false"
+      android:theme="@style/Theme.Zort.TaskWidgetAction"
+      android:taskAffinity="${applicationId}.taskwidget"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:launchMode="singleTask" />
+
     <!-- The small window the widget opens over the home screen. Its own task, so closing it
          goes back to wherever the user was, and it never shows up in Recents. -->
     <activity

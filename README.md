@@ -1,10 +1,10 @@
 # Zort (mobil)
 
-zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pins**, **Notes** ve **Links**
-(Android'de ana ekrandan ekleme için bir de **Hızlı ekle** widget'ı var); yenileri
+zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pins**, **Notes**, **Links** ve
+**Görevler** (Android'de ana ekran için **Hızlı ekle** ve **Görevler** widget'ları var); yenileri
 aynı menüye eklenir (`src/app/index.tsx` içindeki `tools` listesi).
 
-Üç listede de **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
+Dört listede de **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
 favoriler listenin en üstünde durur; kendi aralarında ve geri kalanlarda listenin normal
 sıralaması korunur (`src/lib/favorites.ts`, v5: her tabloda `favorite` sütunu). Favori yapmak
 düzenleme sayılmaz, notun düzenleme tarihini değiştirmez. Pins'te sıra: favoriler, sonra
@@ -91,6 +91,74 @@ Bildirimlere girmeyen, yalnızca uygulamada duran notlar.
 - Liste son düzenlenene göre sıralı; kartta düzenleme tarihi görünür
 - Kodda Pins'in `Note` tipiyle karışmasın diye `Memo` adıyla geçer (`memos` tablosu)
 
+## Görevler
+
+Yapılacaklar (kodda `tasks`, İngilizcede "Tasks").
+
+- Başlık (zorunlu) + açıklama (isteğe bağlı) + **tarih ve saat** (isteğe bağlı) + **yineleme**
+- **Liste gruplu:** Gecikmiş (önceki günler), Bugün, Yarın, Yaklaşan, Tarihsiz, Tamamlananlar.
+  Her grupta favoriler üstte, sonra en yakın tarih. Bugün içinde saati geçmiş görev "Bugün"de
+  kalır ama tarihi ve halkası kırmızıya döner. Gruplar gece yarısı ve her saat geçtiğinde kendiliğinden
+  güncellenir.
+- Karttaki halkaya dokununca tamamlanır; altta **Geri al** çıkar. Tamamlananlar katlanır, oradan
+  geri alınabilir ya da **Temizle** ile silinir.
+- Karta dokununca düzenleme ekranı açılır.
+
+### Yineleme
+
+- **Her X gün / hafta / ay / yıl** (X: 1–99). Haftalıkta **şu günlerde**: haftanın 7 gününden
+  istenenler (en az biri seçili kalır; sıra dile göre, Türkçede Pazartesi başta).
+- **Başlangıç:** yalnızca gün. Aylık ve yıllık kurallar başlangıcın tarihini tutar; ayın 31'i kısa
+  aylarda ayın son günü, 29 Şubat artık olmayan yıllarda 28 Şubat olur. "2 haftada bir" başlangıcın
+  bulunduğu haftadan (Pazartesi–Pazar) sayılır.
+- **Bitiş:** Hiçbir zaman / Şu tarihte (o gün dahil) / Şu kadar tekrardan sonra (ilki dahil, 1–999).
+- Yinelenen görevde düzenleme ekranındaki alan yalnızca **saat**tir; günleri kural belirler.
+  Ekranda "Sıradaki: …" ile görevin hangi gün çıkacağı görünür. Kural hiç gerçekleşmeyecekse
+  (bitiş geçmişte, ya da başlangıçtan önce) kaydedilmez.
+- Yinelenen görev **tek satırdır**: tamamlanınca bir sonraki tarihine geçer, seri bitince
+  tamamlanmış olur. Geride kalmış bir görev (3 gün yapılmamış günlük görev) tamamlanınca kaçırılan
+  günler sıraya dizilmez, bugün ya da sonraki ilk güne geçer. Başlangıcı geçmişte olan yeni bir
+  seri de bugünden başlar. Tekrar sayısı her zaman başlangıçtan sayılır.
+- Kuralı değiştirmeden düzenlemek (başlık, saat) görevi bulunduğu tekrarda bırakır; kuralı
+  değiştirmek seriyi bugünden yeniden hesaplar.
+- Mantık saf TypeScript'tir ve testlidir: `src/lib/recurrence.ts` (kural hangi günlere düşer),
+  `src/lib/task-logic.ts` (zamanlama, tamamlama, gruplama). Günler yerel takvimle hesaplanır
+  (24 saat eklenmez), yaz saati geçişlerinde saat kaymaz; testler bu yüzden yaz saati olan bir
+  dilimde çalışır (`jest.global-setup.js`).
+
+## Widget: Görevler (Android)
+
+4×4 widget: üstte logo, "Görevler" ve sayılar ("4 görev · 1 gecikmiş"), sağda **+**; altında
+yapılacak görevler, en yakın tarihli üstte, tarihsizler sonda. Boyutu değiştirilebilir.
+
+- **Halkaya dokununca** görev tamamlanır ve widget'tan kalkar; yinelenen görev sıradaki tarihine
+  geçer. Uygulama açık olmasa da çalışır.
+- **Göreve dokununca** uygulamada o görevin düzenleme ekranı açılır; başlığa dokununca Görevler listesi.
+- **+** ana ekranın üstünde küçük bir **Yeni görev** penceresi açar: başlık, açıklama ve tarih
+  (Tarih yok / Bugün / Yarın / Tarih seç) ile saat. Yineleme için **Uygulamada aç**: yazılan ve
+  seçilenle dolu düzenleme ekranı açılır (`zort://tasks/new?title=…&due=…`).
+- Geciken görevin halkası ve tarihi kırmızı, bugünün tarihi mavi. Açık/koyu tema telefonu izler.
+- Widget gece yarısı ve bir görevin saati geldiğinde (gecikti olarak işaretlemek için) kendini
+  yeniler; saat, saat dilimi ve dil değişince de. Bu yenileme tek bir inexact alarmla yapılır, izin
+  istemez, birkaç dakika gecikebilir.
+
+Nasıl çalışıyor:
+
+- Liste uygulamadan native tarafa gönderilir (`syncTasksWidget`, her değişiklikte); widget onu
+  React Native'i başlatmadan çizer (`TaskStore`, `TasksWidgetProvider`, `TasksWidgetService`).
+- Widget'tan tamamlama veritabanına doğrudan yazılmaz (aynı nedenle: Pins'teki "İğneyi kaldır"
+  gibi). Native taraf görevi kendi listesinde ilerletir ve dokunuşun **zamanını** kuyruğa yazar;
+  uygulama açıkken hemen, değilse sonraki açılışta `completeTask` aynı zamanla uygulanır, böylece
+  sonuç widget'ın gösterdiğiyle aynı olur. Yinelenen görevin sonraki 30 tekrarı listeyle gelir;
+  widget'tan bundan fazla tamamlanırsa görev uygulama açılana kadar widget'ta görünmez.
+- Satır dokunuşları görünmez bir Activity'den geçer (`TaskWidgetActionActivity`): widget listesinde
+  tüm satırlar için tek bir tıklama şablonu var ve uygulamayı açmak bir Activity başlatmayı gerektirir;
+  yeni Android sürümleri bunu bir broadcast receiver'dan engelliyor.
+- Widget'taki renkler düzende sabit, görünürlükle seçilir: kodda çözülseler uygulamanın kendi tema
+  ayarını izlerlerdi, ana ekranınkini değil.
+- Kodu Hızlı ekle ile aynı modülde (`modules/quick-add`): **+** aynı pencereyi (`QuickAddActivity`)
+  `type: "task"` ile açar.
+
 ## Widget: Hızlı ekle (Android)
 
 Ana ekrana eklenen widget'ta her eklenebilen şey için bir düğme var: **Pins**, **Not**,
@@ -134,7 +202,7 @@ Ana sayfanın altındaki **Google Drive yedeği** satırı → Yedekleme ekranı
 
 - **Nereye:** kullanıcının Drive'ındaki uygulamaya özel gizli klasör (`appDataFolder`, izin
   `drive.appdata`): Zort kullanıcının hiçbir dosyasını göremez, yedek de Drive'da dosya olarak
-  görünmez. Tek dosya: `zort-backup.json`, üç tablonun bütün satırları (tema hariç).
+  görünmez. Tek dosya: `zort-backup.json`, dört tablonun bütün satırları (tema hariç).
 - **Ne zaman:** her değişiklikten 3 sn sonra; uygulama arka plana geçerken hemen (orada
   zamanlayıcılar durur). Widget'tan eklenenler de dahil. "Yedeklenmedi" bilgisi cihazda saklanır,
   uygulama kapanırsa sonraki açılışta tamamlanır. Bağlantı yoksa bir sonraki değişiklikte ya da
@@ -142,7 +210,7 @@ Ana sayfanın altındaki **Google Drive yedeği** satırı → Yedekleme ekranı
 - **Girişte:** Drive'da yedek yoksa cihazdaki veri ilk yedek olur. Yedek varsa ve cihaz boşsa
   (format, yeni telefon, yeniden kurulum) kendiliğinden geri yüklenir. İkisinde de veri varsa
   hangisinin kalacağı sorulur; seçilene kadar hiçbir şeyin üstüne yazılmaz.
-- **Geri yükleme** cihazdaki üç tablonun yerine geçer (tek işlemde, yarım kalmaz); listeler ve
+- **Geri yükleme** cihazdaki dört tablonun yerine geçer (tek işlemde, yarım kalmaz); listeler ve
   Pins bildirimleri yeniden okunur.
 - **Çıkış:** veriler cihazda ve Drive'da kalır. "Drive'daki yedeği sil" yedeği silip çıkış yapar.
 - Tek cihaz için tasarlandı: iki cihaz aynı anda kullanılırsa son yedekleyen kazanır.
@@ -194,6 +262,9 @@ src/app/                   ekranlar (Expo Router)
   links/
     index.tsx              link listesi, dokununca açılan menü
     [id].tsx               link ekleme/düzenleme
+  tasks/
+    index.tsx              görev listesi (gruplu), tamamlama ve Geri al
+    [id].tsx               görev ekleme/düzenleme: tarih-saat, yineleme
   notes/
     index.tsx              not listesi (Notes), dokununca açılan menü
     [id].tsx               not ekleme/düzenleme
@@ -211,6 +282,10 @@ src/lib/
   pin-status.ts            iğne durumu (iğnesiz / her zaman / başlayacak / görünüyor / bitti)
   links-db.ts, links-context.tsx   linkler (v3: links tablosu)
   memos-db.ts, memos-context.tsx   Notes sayfasının notları (v4: memos tablosu)
+  tasks-db.ts, tasks-context.tsx   görevler (v6: tasks tablosu), widget eşitleme ve kuyruğu
+  recurrence.ts            yineleme kuralları: hangi günler (saf, testli)
+  task-logic.ts            zamanlama, tamamlama, gruplama, widget'a giden görev (saf, testli)
+  task-format.ts           görev tarihleri ve kuralların metni
   clipboard.ts             kopyalama (Android 13+ kendi onayını gösterdiği için mesajı atlar)
   data-events.ts           uygulama ve Hızlı ekle penceresi arasında "veri değişti" sinyali
   backup.ts                Drive yedeği: ne zaman yedeklenir, giriş/geri yükleme akışı
@@ -229,8 +304,9 @@ modules/pinned-notifications/   bildirimler için native modül
                            zamanlanmış bildirim, İğneyi kaldır / Sil düğmeleri
   index.ts                 JS API: syncPinnedNotes, requestPermission, ...
 modules/link-opener/       yalnızca Android: varsayılan tarayıcıda gizli (ephemeral) sekme
-modules/quick-add/         yalnızca Android: Hızlı ekle widget'ı ve açtığı pencere (Activity)
-src/quick-add/             Hızlı ekle penceresinin React tarafı (QuickAddRoot, QuickAddSheet)
+modules/quick-add/         yalnızca Android: Hızlı ekle ve Görevler widget'ları, açtıkları pencere
+src/quick-add/             pencerelerin React tarafı (QuickAddRoot, QuickAddFrame, QuickAddSheet,
+                           TaskQuickAddSheet)
 index.ts                   giriş: expo-router + "QuickAdd" kök bileşeni
 plugins/with-short-cxx-dir.js   Windows'ta 260 karakter yol sınırını aşmak için derleme ayarı
 scripts/make-icons.mjs     uygulama ikonlarını zort.ing logosundan üretir
@@ -289,7 +365,8 @@ Gerekenler: Node 20+, Android için JDK 17+ ve Android SDK.
 ```bash
 npm install
 npm run typecheck
-npm test        # Jest (jest-expo); veritabanı testleri Node'un kendi SQLite'ıyla çalışır
+npm test        # Jest (jest-expo); veritabanı testleri Node'un kendi SQLite'ıyla çalışır,
+                # tarih testleri America/New_York diliminde (yaz saati geçişleri için)
 ```
 
 ### Android: telefona APK kurma

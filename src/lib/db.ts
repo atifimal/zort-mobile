@@ -28,10 +28,10 @@ type NoteRow = {
   updated_at: number;
 };
 
-export const DATABASE_VERSION = 5;
+export const DATABASE_VERSION = 6;
 
-/** The tables whose rows can be marked as favorites (all with a `favorite` column, v5). */
-export type FavoriteTable = 'notes' | 'links' | 'memos';
+/** The tables whose rows can be marked as favorites (all with a `favorite` column, v5; tasks v6). */
+export type FavoriteTable = 'notes' | 'links' | 'memos' | 'tasks';
 
 /** Doesn't touch updated_at: marking a favorite isn't an edit. */
 export async function setFavorite(db: SQLiteDatabase, table: FavoriteTable, id: string, favorite: boolean) {
@@ -119,6 +119,29 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       `);
     });
     version = 5;
+  }
+
+  if (version === 5) {
+    // Tasks page (to-dos, with optional due times and repeat rules); see tasks-db.ts
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS tasks (
+          id           TEXT PRIMARY KEY NOT NULL,
+          title        TEXT NOT NULL,
+          body         TEXT NOT NULL DEFAULT '',
+          due_at       INTEGER,
+          repeat       TEXT,
+          repeat_index INTEGER NOT NULL DEFAULT 0,
+          completed_at INTEGER,
+          favorite     INTEGER NOT NULL DEFAULT 0,
+          created_at   INTEGER NOT NULL,
+          updated_at   INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS tasks_due_at ON tasks (completed_at, due_at);
+        PRAGMA user_version = 6;
+      `);
+    });
+    version = 6;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

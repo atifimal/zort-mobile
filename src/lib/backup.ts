@@ -167,6 +167,7 @@ async function applyRestore(database: SQLiteDatabase, snapshot: Snapshot, remote
   announceChange('notes');
   announceChange('links');
   announceChange('memos');
+  announceChange('tasks');
 }
 
 function requireDb(): SQLiteDatabase {

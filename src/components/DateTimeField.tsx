@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, useColorScheme, View } from 'rea
 
 import { language } from '@/lib/i18n';
 import { formatDateTime } from '@/lib/pin-status';
+import { formatDay, formatTime } from '@/lib/task-format';
 import { spacing, useColors } from '@/lib/theme';
 
 type Props = {
@@ -12,15 +13,17 @@ type Props = {
   onChange: (value: number) => void;
   minimum?: number;
   disabled?: boolean;
+  /** What is picked: date and time (the default), only the day, or only the time of day. */
+  mode?: 'datetime' | 'date' | 'time';
 };
 
 const toMinute = (date: Date) => Math.floor(date.getTime() / 60_000) * 60_000;
 
 /**
  * A labelled date-and-time row. iOS shows its compact picker in the row; Android shows the
- * value and opens the system date dialog, then the time dialog.
+ * value and opens the system date dialog, then the time dialog (or just one of them, by mode).
  */
-export function DateTimeField({ label, value, onChange, minimum, disabled }: Props) {
+export function DateTimeField({ label, value, onChange, minimum, disabled, mode = 'datetime' }: Props) {
   const colors = useColors();
   const dark = useColorScheme() === 'dark';
   const minimumDate = minimum === undefined ? undefined : new Date(minimum);
@@ -31,7 +34,7 @@ export function DateTimeField({ label, value, onChange, minimum, disabled }: Pro
         <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
         <DateTimePicker
           value={new Date(value)}
-          mode="datetime"
+          mode={mode}
           display="compact"
           minimumDate={minimumDate}
           disabled={disabled}
@@ -45,22 +48,27 @@ export function DateTimeField({ label, value, onChange, minimum, disabled }: Pro
     );
   }
 
+  const openTime = (day: Date) =>
+    DateTimePickerAndroid.open({
+      value: day,
+      mode: 'time',
+      onValueChange: (_, time) => onChange(toMinute(time)),
+    });
+
   const open = () => {
+    if (mode === 'time') {
+      openTime(new Date(value));
+      return;
+    }
     DateTimePickerAndroid.open({
       value: new Date(value),
       mode: 'date',
       minimumDate,
-      onValueChange: (_, day) => {
-        DateTimePickerAndroid.open({
-          value: day,
-          mode: 'time',
-          onValueChange: (__, time) => onChange(toMinute(time)),
-        });
-      },
+      onValueChange: (_, day) => (mode === 'date' ? onChange(toMinute(day)) : openTime(day)),
     });
   };
 
-  const formatted = formatDateTime(value);
+  const formatted = mode === 'date' ? formatDay(value) : mode === 'time' ? formatTime(value) : formatDateTime(value);
   return (
     <Pressable
       onPress={open}

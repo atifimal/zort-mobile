@@ -6,4 +6,27 @@
   <string name="quick_add_link">Link</string>
   <string name="quick_add_note">Note</string>
   <string name="quick_add_open_app">Open Zort</string>
+  <string name="tasks_widget_label">Tasks</string>
+  <string name="tasks_widget_description">Your tasks, soonest first. Check them off, or add one with +.</string>
+  <string name="tasks_widget_title">Tasks</string>
+  <string name="tasks_widget_add">Add task</string>
+  <string name="tasks_widget_empty">Nothing to do</string>
+  <string name="tasks_widget_empty_hint">Tap + to add a task</string>
+  <string name="tasks_widget_all_done">All done</string>
+  <string name="tasks_widget_count_one">1 task</string>
+  <string name="tasks_widget_count_many">%d tasks</string>
+  <string name="tasks_widget_overdue">· %d overdue</string>
+  <string name="tasks_widget_today">Today</string>
+  <string name="tasks_widget_tomorrow">Tomorrow</string>
+  <string name="tasks_widget_yesterday">Yesterday</string>
+  <string name="tasks_widget_day_time">%1$s, %2$s</string>
+  <string name="tasks_widget_mark_done">Mark “%s” as done</string>
+  <string name="tasks_widget_repeats">Repeats</string>
+  <string name="tasks_widget_sample_1">Pay the electricity bill</string>
+  <string name="tasks_widget_sample_1_due">Today, 6:00 PM</string>
+  <string name="tasks_widget_sample_2">Gym</string>
+  <string name="tasks_widget_sample_2_due">Tomorrow, 7:30 AM</string>
+  <string name="tasks_widget_sample_3">Call Mom</string>
+  <string name="tasks_widget_sample_3_due">Sun, 11:00 AM</string>
+  <string name="tasks_widget_sample_count">3 tasks</string>
 </resources>

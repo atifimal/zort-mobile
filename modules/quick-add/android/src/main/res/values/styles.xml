@@ -13,6 +13,12 @@
     <item name="android:navigationBarColor">@android:color/transparent</item>
   </style>
 
+  <!-- The Tasks widget rows' go-between activity: nothing to see, no animation -->
+  <style name="Theme.Zort.TaskWidgetAction" parent="@android:style/Theme.Translucent.NoTitleBar">
+    <item name="android:windowAnimationStyle">@null</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+  </style>
+
   <!-- Widget pieces, shared by its regular and compact layouts -->
   <style name="QuickAddWidget" />
 

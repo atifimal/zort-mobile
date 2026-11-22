@@ -36,7 +36,7 @@ import { radius, spacing, useColors } from '@/lib/theme';
 type Busy = 'signIn' | 'backUp' | 'restore' | 'signOut' | 'delete' | null;
 
 const countsText = (counts: Counts) =>
-  t('backupCounts', { pins: counts.notes, notes: counts.memos, links: counts.links });
+  t('backupCounts', { pins: counts.notes, notes: counts.memos, links: counts.links, tasks: counts.tasks });
 
 const failure = (kind: Exclude<Busy, null>, error: unknown) => {
   const message = backupErrorMessage(error);
