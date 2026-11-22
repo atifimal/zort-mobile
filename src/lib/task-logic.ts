@@ -18,9 +18,19 @@ import {
 } from './recurrence';
 import type { Task } from './tasks-db';
 
-export type TaskInput = { title: string; body: string; due: number | null; repeat: Repeat | null };
+export type TaskInput = {
+  title: string;
+  body: string;
+  due: number | null;
+  repeat: Repeat | null;
+  /** Minutes before the due time; null: none. Ignored without a due time. */
+  reminder: number | null;
+};
 
 export type Schedule = Pick<Task, 'due' | 'repeat' | 'occurrence'>;
+
+/** The reminders a task can have, in minutes before its due time. */
+export const REMINDER_CHOICES: readonly number[] = [0, 5, 15, 30, 60, 24 * 60];
 
 /**
  * Where a task saved with `input` is due. Without a rule, at `input.due`. With one, at the
@@ -124,7 +134,10 @@ export function nextTaskChange(tasks: readonly Task[], now: number): number {
 export type WidgetTask = {
   id: string;
   title: string;
+  body: string;
   due: number | null;
+  /** Minutes before `due` (and each of `upcoming`) to remind; null: none. */
+  reminder: number | null;
   repeats: boolean;
   createdAt: number;
   /** The next occurrences after this one, in order: their due times and indexes. */
@@ -142,7 +155,9 @@ export function widgetTask(task: Task): WidgetTask {
   return {
     id: task.id,
     title: task.title,
+    body: task.body,
     due: task.due,
+    reminder: task.due === null ? null : task.reminder,
     repeats: repeating,
     createdAt: task.createdAt,
     upcoming: after.next.map((occurrence) => ({ due: atTime(occurrence.day, minutes), occurrence: occurrence.index })),

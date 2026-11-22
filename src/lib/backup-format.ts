@@ -125,6 +125,14 @@ export const countsOf = (tables: Tables): Counts => ({
   tasks: tables.tasks?.length ?? 0,
 });
 
+/** "zort-yedek-2026-11-22-1430.json" (local time): sorts by date, two on one day don't clash. */
+export function backupFileName(time: number, prefix: string): string {
+  const date = new Date(time);
+  const two = (value: number) => String(value).padStart(2, '0');
+  const day = `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
+  return `${prefix}-${day}-${two(date.getHours())}${two(date.getMinutes())}.json`;
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

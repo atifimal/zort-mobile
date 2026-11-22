@@ -104,6 +104,32 @@ Yapılacaklar (kodda `tasks`, İngilizcede "Tasks").
   geri alınabilir ya da **Temizle** ile silinir.
 - Karta dokununca düzenleme ekranı açılır.
 
+### Hatırlatma (Android)
+
+- Tarihli her görevde **Hatırlatma:** Yok / Tam zamanında / 5, 15, 30 dk / 1 saat / 1 gün önce.
+  Yeni görevlerde varsayılan "Tam zamanında" (widget'ın + penceresinden eklenenlerde de); hatırlatmadan
+  önce eklenmiş görevlerde "Yok". Karttaki zil, görevin hatırlatması olduğunu gösterir.
+- Zamanı gelince sesli, üstten düşen bir bildirim gelir ("Görev hatırlatmaları" kanalı): başlık,
+  tarih, açıklama; **Tamamla** ve **10 dk ertele** düğmeleri. Bildirime dokununca görev açılır.
+  Uygulama kapalıyken de, telefon yeniden başladıktan sonra da çalışır; kapalıyken kaçırılanlar
+  açılışta gelir.
+- Yinelenen görevde hatırlatma, görevin üzerinde olduğu tarih için gelir; tamamlanınca bir sonraki
+  tarih için kurulur. Tamamlanmamış bir görev sonraki tekrarlarında yeniden hatırlatmaz.
+- Görev tamamlanınca, silinince ya da daha sonraki bir saate alınınca gösterilen hatırlatması kalkar.
+  Saati çoktan geçmiş bir hatırlatmayla kaydedilen görev hatırlatma göndermez.
+- **İzinler:** hatırlatma ilk kurulduğunda bildirim izni istenir. Android 14+ tam zamanlı alarma
+  varsayılan olarak izin vermiyor; izin yoksa hatırlatma (telefon boşta beklerken) birkaç dakika,
+  emülatörde görüldüğü gibi 7 dakikaya kadar gecikebilir. Düzenleme ekranı bunu söyler ve **İzin ver**
+  ile sistem ayarını açar; izin verilince alarmlar hemen tam zamanlı olarak yeniden kurulur.
+- Alarm gibi tam ekran, susturulana kadar çalan bir hatırlatma bilerek yok: Android 14+'da tam
+  ekran bildirim izni Play'de yalnızca alarm ve arama uygulamalarına veriliyor.
+- Nasıl çalışıyor: `TaskReminders` (`modules/quick-add`) widget'ın görev listesini kullanır ve
+  tüm görevler için tek bir alarm kurar (en yakın hatırlatma). Alarm çalınca son kontrolden bu
+  yana zamanı gelen her hatırlatmayı gönderir; kontrol zamanı saklandığı için hiçbiri iki kez
+  gitmez, alarm gecikse de kaybolmaz. **Tamamla**, widget'taki halka ile aynı yoldan geçer
+  (dokunuş zamanı kuyruğa yazılır, uygulama aynı sonucu kendine uygular).
+- iOS'ta yok (modül yalnızca Android).
+
 ### Yineleme
 
 - **Her X gün / hafta / ay / yıl** (X: 1–99). Haftalıkta **şu günlerde**: haftanın 7 gününden
@@ -215,6 +241,30 @@ Ana sayfanın altındaki **Google Drive yedeği** satırı → Yedekleme ekranı
 - **Çıkış:** veriler cihazda ve Drive'da kalır. "Drive'daki yedeği sil" yedeği silip çıkış yapar.
 - Tek cihaz için tasarlandı: iki cihaz aynı anda kullanılırsa son yedekleyen kazanır.
 
+### Dosyaya yedek
+
+Yedekleme ekranının **Dosya** bölümü, Drive'a alternatif (ya da ek) olarak verinin tamamını tek bir
+dosyaya aktarır; hesap gerekmez.
+
+- **Dosyaya kaydet:** sistemin "Farklı kaydet" ekranı açılır, ad hazır gelir
+  (`zort-yedek-2026-11-22-1530.json`); İndirilenler, hafıza kartı ya da bir bulut sürücünün klasörü
+  seçilebilir, ad değiştirilebilir. Klasör seçici (`ACTION_OPEN_DOCUMENT_TREE`) değil
+  `ACTION_CREATE_DOCUMENT` kullanılır: Android 11+ klasör seçicide İndirilenler'e izin vermiyor.
+  expo-file-system bunu sunmadığı için küçük bir native modül var (`modules/save-file`).
+- **Paylaş:** dosya paylaşım menüsüyle bir uygulamaya gönderilir (e-posta, mesajlaşma, Drive…).
+  Dosya önbellekte bir klasöre yazılır, bir sonraki paylaşımda silinir.
+- **Dosyadan geri yükle:** dosya seçilir, içeriği denetlenir; dosyadaki ve telefondaki sayılar
+  gösterilip onay istenir. Telefondaki dört tablonun yerine tek işlemde geçer; hemen ardından
+  **Geri al** çıkar (öncesi bellekte tutulur). Pins bildirimleri, widget'lar ve listeler yenilenir;
+  Drive'a giriş yapılmışsa geri yüklenen veri Drive'a da yedeklenir.
+- Dosya Drive yedeğiyle aynı JSON'dur (`backup-format.ts`): eski sürümün dosyası yeni uygulamada
+  açılır, yeni sürümün dosyası eski uygulamada "Zort'u güncelle" der, Zort yedeği olmayan ya da
+  bozuk dosya (en fazla 20 MB) hiçbir şeye dokunmadan reddedilir.
+- Son dosya yedeğinin tarihi saklanır ve ekranda görünür; Drive kapalıyken ana ekrandaki satır da
+  onu gösterir ("Drive kapalı · Son dosya: …"). Paylaşım bu tarihi değiştirmez (gönderilip
+  gönderilmediği bilinemez).
+- iOS'ta "Dosyaya kaydet" yok (paylaşım menüsünün "Dosyalara Kaydet"i aynı işi görür).
+
 ### Yedek ve uygulama güncellemeleri
 
 Cihazdaki veri güncellemede hiç kaybolmaz: veritabanı şeması sürümlü (`DATABASE_VERSION`,
@@ -291,6 +341,7 @@ src/lib/
   backup.ts                Drive yedeği: ne zaman yedeklenir, giriş/geri yükleme akışı
   backup-data.ts           yedeğin içeriği (anlık görüntü al, geri yükle)
   backup-format.ts         yedek dosyasının biçimi; eski/yeni sürüm kuralları, BACKUP_TABLES
+  backup-file.ts           dosyaya yedek: Farklı kaydet, paylaş, dosyadan okuma
   __tests__/               yedek biçimi ve gerçek veritabanıyla geri yükleme testleri
 src/test-utils/            testler için Node SQLite üzerinde expo-sqlite benzeri veritabanı
   drive.ts, google-auth.ts Drive REST çağrıları; Google ile giriş ve erişim jetonu
@@ -304,6 +355,7 @@ modules/pinned-notifications/   bildirimler için native modül
                            zamanlanmış bildirim, İğneyi kaldır / Sil düğmeleri
   index.ts                 JS API: syncPinnedNotes, requestPermission, ...
 modules/link-opener/       yalnızca Android: varsayılan tarayıcıda gizli (ephemeral) sekme
+modules/save-file/         yalnızca Android: sistemin "Farklı kaydet" ekranıyla dosya kaydetme
 modules/quick-add/         yalnızca Android: Hızlı ekle ve Görevler widget'ları, açtıkları pencere
 src/quick-add/             pencerelerin React tarafı (QuickAddRoot, QuickAddFrame, QuickAddSheet,
                            TaskQuickAddSheet)

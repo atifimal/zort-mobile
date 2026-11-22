@@ -35,6 +35,7 @@ const task: Task = {
   },
   occurrence: 0,
   completedAt: null,
+  reminder: 15,
   favorite: false,
   createdAt: 6,
   updatedAt: 6,

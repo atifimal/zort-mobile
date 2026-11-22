@@ -29,4 +29,8 @@
   <string name="tasks_widget_sample_3">Annemi ara</string>
   <string name="tasks_widget_sample_3_due">Paz 11:00</string>
   <string name="tasks_widget_sample_count">3 görev</string>
+  <string name="task_reminders_channel_name">Görev hatırlatmaları</string>
+  <string name="task_reminders_channel_description">Görevin zamanı gelince, Zort’ta seçtiğin anda.</string>
+  <string name="task_reminder_done">Tamamla</string>
+  <string name="task_reminder_snooze">%d dk ertele</string>
 </resources>

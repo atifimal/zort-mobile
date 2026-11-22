@@ -3,7 +3,9 @@ import { router, useLocalSearchParams, usePreventRemove } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  AppState,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -16,14 +18,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { canScheduleExactAlarms, openExactAlarmSettings } from '@modules/quick-add';
+import { getPermissionStatus } from '@modules/pinned-notifications';
+
+import { ActionSheet } from '@/components/ActionSheet';
 import { DateTimeField } from '@/components/DateTimeField';
 import { Icon } from '@/components/Icon';
 import { ModalHeader } from '@/components/ModalHeader';
 import { RepeatSettings } from '@/components/RepeatSettings';
 import { t } from '@/lib/i18n';
 import { normalizeRepeat, sameRepeat, startOfDay, type Repeat } from '@/lib/recurrence';
-import { defaultDue, formatDue } from '@/lib/task-format';
-import { scheduleTask } from '@/lib/task-logic';
+import { defaultDue, describeReminder, formatDue } from '@/lib/task-format';
+import { REMINDER_CHOICES, scheduleTask } from '@/lib/task-logic';
 import { useTasks } from '@/lib/tasks-context';
 import { limits, radius, spacing, useColors } from '@/lib/theme';
 import { useListUnderneath } from '@/lib/use-list-underneath';
@@ -59,6 +65,11 @@ function TaskEditor({ id, initialTitle, initialDue }: { id: string; initialTitle
   const [hasDate, setHasDate] = useState(savedDue !== null);
   // Kept while the switches are off, so turning them back on brings the values back
   const [due, setDue] = useState(() => savedDue ?? defaultDue());
+  // New tasks remind at their due time; tasks from before reminders existed have none
+  const savedReminder = existing ? existing.reminder : 0;
+  const [reminder, setReminder] = useState<number | null>(savedReminder ?? (existing ? null : 0));
+  const [choosingReminder, setChoosingReminder] = useState(false);
+  const reminderAccess = useReminderAccess(hasDate && reminder !== null);
   const [repeatOn, setRepeatOn] = useState(existing?.repeat != null);
   const [repeat, setRepeat] = useState<Repeat>(() => existing?.repeat ?? newRepeat(savedDue ?? defaultDue()));
   const [busy, setBusy] = useState(false);
@@ -66,7 +77,7 @@ function TaskEditor({ id, initialTitle, initialDue }: { id: string; initialTitle
   const bodyRef = useRef<TextInputInstance>(null);
 
   const repeating = hasDate && repeatOn;
-  const input = { due: hasDate ? due : null, repeat: repeating ? repeat : null };
+  const input = { due: hasDate ? due : null, repeat: repeating ? repeat : null, reminder: hasDate ? reminder : null };
   const schedule = useMemo(
     () => (repeating ? scheduleTask({ due, repeat }, now, existing) : null),
     [repeating, due, repeat, now, existing],
@@ -86,6 +97,7 @@ function TaskEditor({ id, initialTitle, initialDue }: { id: string; initialTitle
     body !== (existing?.body ?? '') ||
     hasDate !== (savedDue !== null) ||
     (hasDate && due !== savedDue) ||
+    (hasDate && reminder !== savedReminder) ||
     repeating !== (existing?.repeat != null) ||
     (repeating && !sameRepeat(repeat, existing?.repeat ?? null));
   const canSave = title.trim().length > 0 && !busy && !repeatError;
@@ -251,14 +263,32 @@ function TaskEditor({ id, initialTitle, initialDue }: { id: string; initialTitle
                   value={due}
                   onChange={setDue}
                 />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <Pressable
+                  onPress={() => setChoosingReminder(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('reminder')}, ${describeReminder(reminder)}`}
+                  style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfacePressed }]}
+                >
+                  <Icon name="bell" size={18} color={reminder !== null ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.rowLabel, { color: colors.text }]}>{t('reminder')}</Text>
+                  <Text style={[styles.rowValue, { color: reminder !== null ? colors.accent : colors.textSecondary }]}>
+                    {describeReminder(reminder)}
+                  </Text>
+                  <Icon name="chevron" size={16} color={colors.textTertiary} />
+                </Pressable>
               </>
             ) : null}
           </View>
-          {hasDate ? null : (
+          {!hasDate ? (
             <View style={styles.hint}>
               <Text style={[styles.hintText, { color: colors.textTertiary }]}>{t('noDateHint')}</Text>
             </View>
-          )}
+          ) : reminderAccess === 'notifications' ? (
+            <AccessHint text={t('reminderNotificationsOff')} action={t('permissionAction')} onPress={openNotificationSettings} />
+          ) : reminderAccess === 'exact' ? (
+            <AccessHint text={t('reminderExactHint')} action={t('reminderAllow')} onPress={openExactAlarmSettings} />
+          ) : null}
         </View>
 
         <RepeatSettings
@@ -285,7 +315,68 @@ function TaskEditor({ id, initialTitle, initialDue }: { id: string; initialTitle
           </Pressable>
         ) : null}
       </ScrollView>
+
+      <ActionSheet
+        visible={choosingReminder}
+        title={t('reminderTitle')}
+        subtitle={repeating ? t('reminderRepeatHint') : undefined}
+        actions={[null, ...REMINDER_CHOICES].map((choice) => ({
+          key: String(choice),
+          label: describeReminder(choice),
+          icon: choice === reminder ? 'check' : choice === null ? 'notificationsOff' : 'bell',
+          onPress: () => {
+            Haptics.selectionAsync().catch(() => {});
+            setReminder(choice);
+          },
+        }))}
+        onClose={() => setChoosingReminder(false)}
+      />
     </KeyboardAvoidingView>
+  );
+}
+
+type ReminderAccess = 'ok' | 'notifications' | 'exact';
+
+/**
+ * Whether a reminder can reach the user on time: notifications allowed, and (Android 14+) exact
+ * alarms allowed. Checked again when the app comes back, e.g. from the settings screen.
+ */
+function useReminderAccess(wanted: boolean): ReminderAccess {
+  const [access, setAccess] = useState<ReminderAccess>('ok');
+  useEffect(() => {
+    if (!wanted) return;
+    let cancelled = false;
+    const check = async () => {
+      const notifications = await getPermissionStatus().catch(() => 'granted');
+      const exact = await canScheduleExactAlarms().catch(() => true);
+      if (!cancelled) setAccess(notifications !== 'granted' ? 'notifications' : !exact ? 'exact' : 'ok');
+    };
+    check();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check();
+    });
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
+  }, [wanted]);
+  return wanted ? access : 'ok';
+}
+
+function openNotificationSettings() {
+  Linking.openSettings().catch(() => {});
+}
+
+function AccessHint({ text, action, onPress }: { text: string; action: string; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.access, { backgroundColor: colors.warningSurface }]} accessibilityLiveRegion="polite">
+      <Icon name="notificationsOff" size={16} color={colors.warningText} />
+      <Text style={[styles.accessText, { color: colors.warningText }]}>{text}</Text>
+      <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" style={({ pressed }) => pressed && { opacity: 0.6 }}>
+        <Text style={[styles.accessAction, { color: colors.warningText }]}>{action}</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -316,6 +407,17 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   rowLabel: { flex: 1, fontSize: 16 },
+  rowValue: { fontSize: 15, fontWeight: '500' },
+  access: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.md,
+  },
+  accessText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  accessAction: { fontSize: 14, fontWeight: '700' },
   hint: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.xs },
   hintText: { flex: 1, fontSize: 13, lineHeight: 18 },
   deleteButton: {

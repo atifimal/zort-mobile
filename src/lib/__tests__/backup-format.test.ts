@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  backupFileName,
   BackupInvalidError,
   BackupTooNewError,
   canReplace,
@@ -79,5 +80,11 @@ describe('canReplace', () => {
 describe('restoreColumns', () => {
   it('keeps the table’s columns the row has: missing ones get their default, unknown ones are dropped', () => {
     expect(restoreColumns({ id: 'x', title: 't', gone: 1 }, ['id', 'title', 'favorite'])).toEqual(['id', 'title']);
+  });
+});
+
+describe('backup file name', () => {
+  it('is dated in local time, to the minute', () => {
+    expect(backupFileName(new Date(2026, 0, 5, 9, 7).getTime(), 'zort-yedek')).toBe('zort-yedek-2026-01-05-0907.json');
   });
 });

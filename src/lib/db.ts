@@ -28,7 +28,7 @@ type NoteRow = {
   updated_at: number;
 };
 
-export const DATABASE_VERSION = 6;
+export const DATABASE_VERSION = 7;
 
 /** The tables whose rows can be marked as favorites (all with a `favorite` column, v5; tasks v6). */
 export type FavoriteTable = 'notes' | 'links' | 'memos' | 'tasks';
@@ -142,6 +142,17 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       `);
     });
     version = 6;
+  }
+
+  if (version === 6) {
+    // Task reminders: minutes before the due time, NULL for none (tasks from before had none)
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        ALTER TABLE tasks ADD COLUMN reminder INTEGER;
+        PRAGMA user_version = 7;
+      `);
+    });
+    version = 7;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

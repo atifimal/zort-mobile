@@ -15,6 +15,7 @@ const task = (patch: Partial<Task>): Task => ({
   repeat: null,
   occurrence: 0,
   completedAt: null,
+  reminder: null,
   favorite: false,
   createdAt: 1,
   updatedAt: 1,

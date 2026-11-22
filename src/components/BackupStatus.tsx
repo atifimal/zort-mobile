@@ -9,7 +9,13 @@ export type BackupStatus = { icon: IconName; text: string; tone: 'muted' | 'good
 
 /** One line on the backup: shown on the home screen and on the Backup screen. */
 export function backupStatus(backup: BackupState): BackupStatus {
-  if (!backup.account) return { icon: 'cloudOff', text: t('backupOff'), tone: 'muted' };
+  if (!backup.account) {
+    // Backing up to files only is a way of backing up too
+    if (backup.lastFileExportAt) {
+      return { icon: 'cloudOff', text: t('backupOffWithFile', { date: formatDateTime(backup.lastFileExportAt) }), tone: 'muted' };
+    }
+    return { icon: 'cloudOff', text: t('backupOff'), tone: 'muted' };
+  }
   if (backup.syncing) return { icon: 'cloudSync', text: t('backupSyncing'), tone: 'busy' };
   if (backup.error) return { icon: 'cloudAlert', text: t('backupErrorShort'), tone: 'bad' };
   if (backup.pending || !backup.lastBackupAt) return { icon: 'cloudSync', text: t('backupPending'), tone: 'busy' };

@@ -20,9 +20,7 @@ class TaskWidgetActionActivity : Activity() {
     if (id != null) {
       when (intent?.getStringExtra(EXTRA_ACTION)) {
         ACTION_COMPLETE -> {
-          TaskStore(this).complete(id, System.currentTimeMillis())
-          TasksWidgetProvider.refresh(this)
-          TaskEvents.notifyCompleted()
+          TaskReminders.complete(this, id)
         }
         ACTION_OPEN -> startActivity(TasksWidgetProvider.openIntent(this, "zort://tasks/${Uri.encode(id)}"))
       }

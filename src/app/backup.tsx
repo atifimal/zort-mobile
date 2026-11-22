@@ -1,6 +1,6 @@
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,16 +24,19 @@ import {
   deleteBackupAndSignOut,
   resolveSignIn,
   restoreBackup,
+  restoreFromFile,
   signInToBackup,
   signOutOfBackup,
   useBackup,
 } from '@/lib/backup';
 import type { Counts } from '@/lib/backup-data';
+import { canSaveToFile, canShare, pickBackupFile, saveBackupToFile, shareBackup } from '@/lib/backup-file';
+import { BackupInvalidError, BackupTooNewError } from '@/lib/backup-format';
 import { t } from '@/lib/i18n';
 import { formatDateTime } from '@/lib/pin-status';
 import { radius, spacing, useColors } from '@/lib/theme';
 
-type Busy = 'signIn' | 'backUp' | 'restore' | 'signOut' | 'delete' | null;
+type Busy = 'signIn' | 'backUp' | 'restore' | 'signOut' | 'delete' | 'fileSave' | 'fileShare' | 'fileImport' | null;
 
 const countsText = (counts: Counts) =>
   t('backupCounts', { pins: counts.notes, notes: counts.memos, links: counts.links, tasks: counts.tasks });
@@ -43,7 +46,10 @@ const failure = (kind: Exclude<Busy, null>, error: unknown) => {
   if (message) Alert.alert(kind === 'signIn' ? t('backupSignInFailed') : t('backupFailed'), message);
 };
 
-/** Google Drive backup: sign in, see when it last ran, back up or restore by hand. */
+/**
+ * Backups: Google Drive (sign in, see when it last ran, back up or restore by hand), and a
+ * backup file to keep anywhere (save, share, restore), with or without Drive.
+ */
 export default function BackupScreen() {
   const colors = useColors();
   const dark = useColorScheme() === 'dark';
@@ -52,6 +58,10 @@ export default function BackupScreen() {
   const { toast, show } = useToast();
   const [busy, setBusy] = useState<Busy>(null);
   const status = backupStatus(backup);
+  const [sharing, setSharing] = useState(false);
+  useEffect(() => {
+    canShare().then(setSharing);
+  }, []);
 
   const run = async (kind: Exclude<Busy, null>, task: () => Promise<void>) => {
     setBusy(kind);
@@ -149,6 +159,81 @@ export default function BackupScreen() {
       { text: t('delete'), style: 'destructive', onPress: () => run('delete', deleteBackupAndSignOut) },
     ]);
 
+  const saveFile = async () => {
+    setBusy('fileSave');
+    try {
+      const name = await saveBackupToFile();
+      if (name) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        show(t('fileSaved', { name }));
+      }
+    } catch (error) {
+      console.warn(error);
+      Alert.alert(t('fileSaveFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const shareFile = async () => {
+    setBusy('fileShare');
+    try {
+      await shareBackup();
+    } catch (error) {
+      console.warn(error);
+      Alert.alert(t('fileSaveFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** Pick a file, see what's in it, confirm; replaced in one go, with Undo right after. */
+  const importFile = async () => {
+    setBusy('fileImport');
+    try {
+      const found = await pickBackupFile();
+      if (!found) return;
+      const confirmed = await new Promise<boolean>((resolve) =>
+        Alert.alert(
+          t('backupRestoreTitle'),
+          t('backupRestoreMessage', {
+            date: found.snapshot.exportedAt ? formatDateTime(found.snapshot.exportedAt) : '?',
+            remote: countsText(found.counts),
+            local: countsText(found.local),
+          }),
+          [
+            { text: t('cancel'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('backupRestoreAction'), style: 'destructive', onPress: () => resolve(true) },
+          ],
+          { cancelable: true, onDismiss: () => resolve(false) },
+        ),
+      );
+      if (!confirmed) return;
+      const previous = await restoreFromFile(found.snapshot);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      show(t('backupRestoredTitle'), {
+        label: t('undo'),
+        onPress: () => {
+          restoreFromFile(previous)
+            .then(() => show(t('fileUndone')))
+            .catch(() => Alert.alert(t('fileImportFailed')));
+        },
+      });
+    } catch (error) {
+      console.warn(error);
+      Alert.alert(
+        t('fileImportFailed'),
+        error instanceof BackupTooNewError
+          ? t('backupNeedsUpdate')
+          : error instanceof BackupInvalidError
+            ? t('fileInvalid')
+            : undefined,
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const account = backup.account;
 
   return (
@@ -157,6 +242,7 @@ export default function BackupScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
       >
+        <SectionLabel text={t('sectionDrive')} />
         <View style={[styles.card, styles.intro, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.heroIcon, { backgroundColor: colors.accentSoft }]}>
             <Icon name="cloud" size={28} color={colors.accent} />
@@ -255,9 +341,64 @@ export default function BackupScreen() {
             </View>
           </>
         )}
+
+        <SectionLabel text={t('sectionFile')} />
+        <View style={[styles.card, styles.intro, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.heroIcon, { backgroundColor: colors.accentSoft }]}>
+            <Icon name="file" size={28} color={colors.accent} />
+          </View>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('fileTitle')}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{t('fileIntro')}</Text>
+          <Text style={[styles.hint, styles.fileStatus, { color: colors.textTertiary }]} accessibilityLiveRegion="polite">
+            {backup.lastFileExportAt ? t('fileLast', { date: formatDateTime(backup.lastFileExportAt) }) : t('fileNever')}
+          </Text>
+        </View>
+
+        <View style={styles.actions}>
+          {canSaveToFile ? (
+            <Action
+              icon="save"
+              label={t('fileSave')}
+              onPress={saveFile}
+              disabled={busy !== null}
+              busy={busy === 'fileSave'}
+              primary
+            />
+          ) : null}
+          {sharing ? (
+            <Action
+              icon="share"
+              label={t('fileShare')}
+              onPress={shareFile}
+              disabled={busy !== null}
+              busy={busy === 'fileShare'}
+              primary={!canSaveToFile}
+            />
+          ) : null}
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Row
+            icon="fileImport"
+            label={t('fileImport')}
+            hint={t('fileImportHint')}
+            onPress={importFile}
+            disabled={busy !== null}
+            busy={busy === 'fileImport'}
+          />
+        </View>
       </ScrollView>
       {toast}
     </View>
+  );
+}
+
+function SectionLabel({ text }: { text: string }) {
+  const colors = useColors();
+  return (
+    <Text style={[styles.sectionLabel, { color: colors.textSecondary }]} accessibilityRole="header">
+      {text}
+    </Text>
   );
 }
 
@@ -346,6 +487,15 @@ function Row({
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginLeft: spacing.xs,
+    marginBottom: -spacing.sm,
+  },
+  fileStatus: { marginTop: spacing.xs, textAlign: 'center' },
   card: { borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   intro: { padding: spacing.xl, alignItems: 'center', gap: spacing.sm },
   heroIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },

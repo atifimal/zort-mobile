@@ -143,7 +143,7 @@ function BackupRow() {
     <Pressable
       onPress={() => router.push('/backup')}
       accessibilityRole="button"
-      accessibilityLabel={`${t('backupRowTitle')}. ${status.text}`}
+      accessibilityLabel={`${t('backupTitle')}. ${status.text}`}
       style={({ pressed }) => [
         styles.backup,
         { backgroundColor: pressed ? colors.surfacePressed : 'transparent', borderColor: colors.border },
@@ -152,7 +152,7 @@ function BackupRow() {
       <Icon name={status.icon} size={20} color={color} />
       <View style={styles.cardText}>
         <Text style={[styles.backupTitle, { color: colors.text }]} numberOfLines={1}>
-          {t('backupRowTitle')}
+          {t('backupTitle')}
         </Text>
         <Text style={[styles.cardStatus, { color }]} numberOfLines={1}>
           {status.text}

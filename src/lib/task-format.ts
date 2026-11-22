@@ -96,6 +96,15 @@ export function sectionTitle(section: TaskSection): string {
   }
 }
 
+/** "At the due time", "15 min before", "1 hour before", "1 day before"; "None" for null. */
+export function describeReminder(minutes: number | null): string {
+  if (minutes === null) return t('reminderNone');
+  if (minutes === 0) return t('reminderAtTime');
+  if (minutes === 60) return t('reminderHour');
+  if (minutes === 24 * 60) return t('reminderDay');
+  return t('reminderMinutes', { n: minutes });
+}
+
 /** A new task's due time: the next full hour today, or 09:00 tomorrow if that's past 22:00. */
 export function defaultDue(now = Date.now()): number {
   const date = new Date(now);

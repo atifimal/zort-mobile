@@ -91,7 +91,8 @@ function TaskForm() {
     if (!canAdd) return;
     setBusy(true);
     try {
-      await createTask({ title: trimmed, body, due, repeat: null });
+      // A task with a time reminds at that time; the app can change or turn it off
+      await createTask({ title: trimmed, body, due, repeat: null, reminder: due === null ? null : 0 });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       ToastAndroid.show(t('quickAddedTask'), ToastAndroid.SHORT);
       controls.dismiss();

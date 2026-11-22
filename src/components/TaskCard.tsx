@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/lib/i18n';
-import { describeRepeat, formatDue } from '@/lib/task-format';
+import { describeReminder, describeRepeat, formatDue } from '@/lib/task-format';
 import { isLate } from '@/lib/task-logic';
 import type { Task } from '@/lib/tasks-db';
 import { radius, spacing, useColors } from '@/lib/theme';
@@ -31,7 +31,16 @@ export const TaskCard = memo(function TaskCard({ task, now, onPress, onToggleDon
     <Pressable
       onPress={() => onPress(task)}
       accessibilityRole="button"
-      accessibilityLabel={[task.title, task.body, due, late ? t('late') : null, repeat].filter(Boolean).join('. ')}
+      accessibilityLabel={[
+        task.title,
+        task.body,
+        due,
+        late ? t('late') : null,
+        task.reminder !== null && !done ? `${t('reminder')}: ${describeReminder(task.reminder)}` : null,
+        repeat,
+      ]
+        .filter(Boolean)
+        .join('. ')}
       style={({ pressed }) => [
         styles.card,
         { backgroundColor: pressed ? colors.surfacePressed : colors.surface, borderColor: colors.border },
@@ -59,6 +68,7 @@ export const TaskCard = memo(function TaskCard({ task, now, onPress, onToggleDon
                 <Text style={[styles.metaText, { color: dueColor }]} numberOfLines={1}>
                   {due}
                 </Text>
+                {task.reminder !== null && !done ? <Icon name="bell" size={13} color={dueColor} /> : null}
               </View>
             ) : null}
             {repeat ? (

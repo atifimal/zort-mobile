@@ -9,6 +9,7 @@ import {
   getPendingTaskCompletions,
   syncTasksWidget,
 } from '@modules/quick-add';
+import { getPermissionStatus, requestPermission } from '@modules/pinned-notifications';
 
 import { useDataChanges } from './data-events';
 import { setFavorite as setRowFavorite } from './db';
@@ -41,6 +42,9 @@ const TasksContext = createContext<TasksContextValue | null>(null);
 // setTimeout fires at once beyond ~24.8 days; later changes are picked up by a later tick
 const MAX_TIMER = 24 * 60 * 60_000;
 
+/** A reminder needs a due time; null otherwise. */
+const reminderOf = (input: TaskInput, due: number | null) => (due === null ? null : input.reminder);
+
 /** The series has no occurrence left: the editor checks first, so this is a bug if it's thrown. */
 export class SeriesOverError extends Error {
   constructor() {
@@ -60,6 +64,16 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now);
   const tasksRef = useRef(tasks);
+  const askedThisLaunch = useRef(false);
+
+  // Ask for notifications when a reminder is first set, once per launch, with the system dialog
+  // only (if that's no longer allowed, the editor says notifications are off)
+  const askForNotifications = useCallback(async (task: Task) => {
+    if (task.reminder === null || askedThisLaunch.current) return;
+    if ((await getPermissionStatus().catch(() => 'granted')) === 'granted') return;
+    askedThisLaunch.current = true;
+    await requestPermission({ openSettings: false }).catch(() => null);
+  }, []);
 
   const commit = useCallback((next: Task[]) => {
     tasksRef.current = next;
@@ -170,6 +184,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         body: input.body.trim(),
         ...schedule,
         completedAt: null,
+        reminder: reminderOf(input, schedule.due),
         favorite: false,
         createdAt: time,
         updatedAt: time,
@@ -178,9 +193,10 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       commit([task, ...tasksRef.current]);
       announce();
       setNow(time);
+      askForNotifications(task).catch(() => {});
       return task;
     },
-    [db, commit, announce],
+    [db, commit, announce, askForNotifications],
   );
 
   const editTask = useCallback(
@@ -190,13 +206,21 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       const time = Date.now();
       const schedule = scheduleTask(input, time, existing);
       if (!schedule) throw new SeriesOverError();
-      const task: Task = { ...existing, title: input.title.trim(), body: input.body.trim(), ...schedule, updatedAt: time };
+      const task: Task = {
+        ...existing,
+        title: input.title.trim(),
+        body: input.body.trim(),
+        ...schedule,
+        reminder: reminderOf(input, schedule.due),
+        updatedAt: time,
+      };
       await updateTask(db, task);
       replace(task);
       announce();
       setNow(time);
+      askForNotifications(task).catch(() => {});
     },
-    [db, replace, announce],
+    [db, replace, announce, askForNotifications],
   );
 
   const complete = useCallback(

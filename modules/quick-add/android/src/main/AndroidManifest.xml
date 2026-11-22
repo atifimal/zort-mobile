@@ -1,5 +1,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- Task reminders: a notification at the time chosen, set again after a reboot. Exact alarms
+       are allowed by default up to Android 13; where they aren't, a reminder can be a few
+       minutes late while the phone is idle (the task editor offers the setting). -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
   <application>
+    <!-- Task reminders: the alarm, the Done and Snooze buttons, and setting the alarm again after
+         a reboot, an app update, a clock change or when exact alarms are allowed -->
+    <receiver
+      android:name="expo.modules.quickadd.TaskReminderReceiver"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+      </intent-filter>
+    </receiver>
+
     <!-- The home screen widget: one button per thing that can be added -->
     <receiver
       android:name="expo.modules.quickadd.QuickAddWidgetProvider"

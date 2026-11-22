@@ -12,18 +12,27 @@ data class UpcomingOccurrence(val due: Long, val occurrence: Int)
 data class WidgetTask(
   val id: String,
   val title: String,
+  val body: String,
   /** ms since epoch; null: no date */
   val due: Long?,
+  /** Minutes before [due] (and each of [upcoming]) to send a reminder; null: none. */
+  val reminder: Int?,
   val repeats: Boolean,
   val createdAt: Long,
   val upcoming: List<UpcomingOccurrence>,
   /** Whether the series ends with [upcoming]. */
   val ends: Boolean,
 ) {
+  /** When to remind about the occurrence it's on; null: no reminder. */
+  val remindAt: Long?
+    get() = if (due != null && reminder != null) due - reminder * 60_000L else null
+
   fun toJson(): JSONObject = JSONObject()
     .put("id", id)
     .put("title", title)
+    .put("body", body)
     .put("due", due ?: JSONObject.NULL)
+    .put("reminder", reminder ?: JSONObject.NULL)
     .put("repeats", repeats)
     .put("createdAt", createdAt)
     .put("upcoming", JSONArray().apply {
@@ -37,7 +46,9 @@ data class WidgetTask(
       return WidgetTask(
         id = json.getString("id"),
         title = json.optString("title"),
+        body = json.optString("body"),
         due = if (json.isNull("due")) null else json.optLong("due"),
+        reminder = if (!json.has("reminder") || json.isNull("reminder")) null else json.optInt("reminder"),
         repeats = json.optBoolean("repeats"),
         createdAt = json.optLong("createdAt"),
         upcoming = (0 until upcoming.length()).map {

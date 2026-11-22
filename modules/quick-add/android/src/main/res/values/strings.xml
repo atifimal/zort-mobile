@@ -29,4 +29,8 @@
   <string name="tasks_widget_sample_3">Call Mom</string>
   <string name="tasks_widget_sample_3_due">Sun, 11:00 AM</string>
   <string name="tasks_widget_sample_count">3 tasks</string>
+  <string name="task_reminders_channel_name">Task reminders</string>
+  <string name="task_reminders_channel_description">When a task is due, at the time you chose in Zort.</string>
+  <string name="task_reminder_done">Done</string>
+  <string name="task_reminder_snooze">Snooze %d min</string>
 </resources>

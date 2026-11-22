@@ -5,8 +5,11 @@ import { BackHandler } from 'react-native';
 export type WidgetTask = {
   id: string;
   title: string;
+  body: string;
   /** ms since epoch; null: no date */
   due: number | null;
+  /** Minutes before `due` (and each of `upcoming`) to send a reminder; null: none. */
+  reminder: number | null;
   repeats: boolean;
   createdAt: number;
   /**
@@ -28,6 +31,8 @@ declare class QuickAddNativeModule extends NativeModule<Events> {
   syncTasks(tasks: WidgetTask[]): Promise<void>;
   getPendingTaskCompletions(): Promise<TaskCompletion[]>;
   acknowledgeTaskCompletions(ids: string[]): Promise<void>;
+  canScheduleExactAlarms(): Promise<boolean>;
+  openExactAlarmSettings(): Promise<void>;
 }
 
 // Android only: the widgets and the quick-add window
@@ -62,4 +67,18 @@ export async function acknowledgeTaskCompletions(ids: string[]): Promise<void> {
 /** A task was checked off on the widget while the app is running. */
 export function addTaskCompletionListener(listener: () => void): EventSubscription {
   return native?.addListener('onTaskCompleted', listener) ?? { remove() {} };
+}
+
+/**
+ * Whether task reminders can come exactly on time. Android 14+ doesn't allow exact alarms by
+ * default; without them a reminder can be a few minutes late while the phone is idle. Always
+ * true where there's nothing to allow (older Android, iOS).
+ */
+export async function canScheduleExactAlarms(): Promise<boolean> {
+  return (await native?.canScheduleExactAlarms()) ?? true;
+}
+
+/** The system screen where Zort can be allowed to set exact alarms. */
+export async function openExactAlarmSettings(): Promise<void> {
+  await native?.openExactAlarmSettings();
 }

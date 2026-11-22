@@ -4,7 +4,7 @@ import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import { isEmpty, localCounts, restoreSnapshot, takeSnapshot, type Counts, type Snapshot } from './backup-data';
-import { BackupInvalidError, BackupTooNewError, canReplace, countsOf, readSnapshot } from './backup-format';
+import { BACKUP_TABLES, BackupInvalidError, BackupTooNewError, canReplace, countsOf, readSnapshot } from './backup-format';
 import { DATABASE_VERSION } from './db';
 import { announceChange, subscribeToChanges } from './data-events';
 import { deleteBackup, downloadBackup, findBackup, uploadBackup, type RemoteBackup } from './drive';
@@ -31,9 +31,16 @@ export type BackupState = {
   lastBackupAt: number | null;
   /** Why the last upload failed; cleared by the next one that works. */
   error: string | null;
+  /** When the data was last exported to a file (Backup screen, "Save to a file"). */
+  lastFileExportAt: number | null;
 };
 
-const KEYS = { fileId: 'backup.fileId', lastAt: 'backup.lastAt', pending: 'backup.pending' } as const;
+const KEYS = {
+  fileId: 'backup.fileId',
+  lastAt: 'backup.lastAt',
+  pending: 'backup.pending',
+  fileExportAt: 'backup.fileExportAt',
+} as const;
 const DEBOUNCE_MS = 3000;
 
 function read(key: string): string | null {
@@ -59,6 +66,7 @@ let state: BackupState = {
   pending: read(KEYS.pending) === '1',
   lastBackupAt: Number(read(KEYS.lastAt)) || null,
   error: null,
+  lastFileExportAt: Number(read(KEYS.fileExportAt)) || null,
 };
 const subscribers = new Set<() => void>();
 function update(patch: Partial<BackupState>) {
@@ -290,6 +298,46 @@ function attach(database: SQLiteDatabase) {
       console.warn('Could not restore the Google sign-in', error);
       update({ ready: true });
     });
+}
+
+/**
+ * The data as a backup file (the same as the Drive backup), for "Save to a file" and "Share".
+ * Call markFileExported once it's been written.
+ */
+export async function exportBackup(): Promise<{ text: string; counts: Counts; exportedAt: number }> {
+  const snapshot = await takeSnapshot(requireDb());
+  return { text: JSON.stringify(snapshot, null, 1), counts: countsOf(snapshot.tables), exportedAt: snapshot.exportedAt };
+}
+
+export function markFileExported(at: number) {
+  write(KEYS.fileExportAt, String(at));
+  update({ lastFileExportAt: at });
+}
+
+export type FoundFile = { snapshot: Snapshot; counts: Counts; local: Counts };
+
+/**
+ * A backup file's contents, checked and brought up to this app's schema. Throws
+ * BackupInvalidError for anything that isn't a Zort backup, BackupTooNewError for one from a
+ * newer version.
+ */
+export async function readBackupFile(text: string): Promise<FoundFile> {
+  const snapshot = readSnapshot(text, DATABASE_VERSION);
+  return { snapshot, counts: countsOf(snapshot.tables), local: await localCounts(requireDb()) };
+}
+
+/**
+ * Replaces the data with a backup file's (in one transaction). Returns what was there before,
+ * so it can be put back (Undo). Unlike a Drive restore this is new data for Drive: if signed in,
+ * it's backed up there next.
+ */
+export async function restoreFromFile(snapshot: Snapshot): Promise<Snapshot> {
+  const database = requireDb();
+  const previous = await takeSnapshot(database);
+  await restoreSnapshot(database, snapshot);
+  for (const table of BACKUP_TABLES) announceChange(table);
+  markPending();
+  return previous;
 }
 
 /** Gives the backup the database; once per React tree, inside SQLiteProvider. */
