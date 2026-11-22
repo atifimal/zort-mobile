@@ -7,7 +7,9 @@ import { Platform } from 'react-native';
 
 import { addNoteOpenListener, consumePendingNoteOpen } from '@modules/pinned-notifications';
 
+import { BackupProvider } from '@/lib/backup';
 import { migrate } from '@/lib/db';
+import { t } from '@/lib/i18n';
 import { LinksProvider } from '@/lib/links-context';
 import { MemosProvider } from '@/lib/memos-context';
 import { NotesProvider, useNotes } from '@/lib/notes-context';
@@ -25,23 +27,27 @@ export default function RootLayout() {
 
   return (
     <SQLiteProvider databaseName="zort.db" onInit={migrate}>
-      {/* At the root, not inside Pin Note: notifications are kept in sync even when the app
-          opens on another screen */}
-      <NotesProvider>
-        <LinksProvider>
-          <MemosProvider>
-            <HideSplashWhenLoaded />
-            <OpenNotesFromNotifications />
-            <StatusBar style="auto" />
-            <Stack screenOptions={screenOptions}>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="pin-notes" options={{ headerShown: false }} />
-              <Stack.Screen name="links" options={{ headerShown: false }} />
-              <Stack.Screen name="notes" options={{ headerShown: false }} />
-            </Stack>
-          </MemosProvider>
-        </LinksProvider>
-      </NotesProvider>
+      {/* Drive backup: gets every change, from here and from the widget's quick-add window */}
+      <BackupProvider>
+        {/* At the root, not inside Pin Note: notifications are kept in sync even when the app
+            opens on another screen */}
+        <NotesProvider>
+          <LinksProvider>
+            <MemosProvider>
+              <HideSplashWhenLoaded />
+              <OpenNotesFromNotifications />
+              <StatusBar style="auto" />
+              <Stack screenOptions={screenOptions}>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="pin-notes" options={{ headerShown: false }} />
+                <Stack.Screen name="links" options={{ headerShown: false }} />
+                <Stack.Screen name="notes" options={{ headerShown: false }} />
+                <Stack.Screen name="backup" options={{ title: t('backupTitle') }} />
+              </Stack>
+            </MemosProvider>
+          </LinksProvider>
+        </NotesProvider>
+      </BackupProvider>
     </SQLiteProvider>
   );
 }

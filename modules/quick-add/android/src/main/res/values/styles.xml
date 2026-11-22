@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- The quick-add window: see-through, so the home screen stays visible behind the sheet.
+       The scrim is the window background, so it's there at once, before React Native draws. -->
+  <style name="Theme.Zort.QuickAdd" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@color/qa_scrim</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:windowAnimationStyle">@null</item>
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+  </style>
+</resources>

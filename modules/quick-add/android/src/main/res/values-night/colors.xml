@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="qa_surface">#0D1117</color>
+  <color name="qa_border">#3D444D</color>
+  <color name="qa_tile">#12263F</color>
+  <color name="qa_tile_pressed">#1B3A5E</color>
+  <color name="qa_accent">#4493F8</color>
+  <color name="qa_scrim">#99000000</color>
+</resources>

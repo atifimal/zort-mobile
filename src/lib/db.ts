@@ -28,7 +28,7 @@ type NoteRow = {
   updated_at: number;
 };
 
-const DATABASE_VERSION = 5;
+export const DATABASE_VERSION = 5;
 
 /** The tables whose rows can be marked as favorites (all with a `favorite` column, v5). */
 export type FavoriteTable = 'notes' | 'links' | 'memos';

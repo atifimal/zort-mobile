@@ -1,9 +1,10 @@
 {
   "name": "zort-mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@react-native-community/datetimepicker": "9.2.1",
+    "@react-native-google-signin/google-signin": "^17.0.0",
     "expo": "~58.0.26",
     "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.16",
@@ -24,10 +25,15 @@
     "react-native-screens": "~4.30.1"
   },
   "devDependencies": {
+    "@jest/globals": "^30.5.2",
     "@resvg/resvg-js": "^2.6.2",
+    "@types/jest": "30.0.0",
+    "@types/node": "^26.6.6",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.15",
     "subset-font": "^2.9.0",
     "typescript": "~6.0.3"
   },
@@ -37,10 +43,20 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "build:apk": "expo prebuild --platform android && cd android && .\\gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a \"-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\"",
+    "build:apk": "expo prebuild --platform android --no-clean && cd android && .\\gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a \"-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\"",
+    "build:aab": "expo prebuild --platform android --no-clean && cd android && .\\gradlew.bat bundleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 \"-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\"",
     "icons": "node scripts/make-icons.mjs ../zort.ing/public/favicon.svg assets",
     "star-font": "node scripts/make-star-font.mjs",
-    "wordmark": "node scripts/make-wordmark.mjs ../zort.ing/index.html assets"
+    "wordmark": "node scripts/make-wordmark.mjs ../zort.ing/index.html assets",
+    "test": "jest"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/android/",
+      "/ios/"
+    ]
+  }
 }

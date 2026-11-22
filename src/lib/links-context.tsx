@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { useDataChanges } from './data-events';
 import { setFavorite as setRowFavorite } from './db';
 import { deleteLink, insertLink, listLinks, updateLink, type Link } from './links-db';
 
@@ -31,6 +32,13 @@ export function LinksProvider({ children }: { children: ReactNode }) {
     setLinks(next);
   }, []);
 
+  // Another copy of this provider (the widget's quick-add window, or the app) changed the links
+  const announce = useDataChanges('links', () => {
+    listLinks(db)
+      .then(commit)
+      .catch((error) => console.error('Could not reload links', error));
+  });
+
   useEffect(() => {
     let cancelled = false;
     listLinks(db)
@@ -59,9 +67,10 @@ export function LinksProvider({ children }: { children: ReactNode }) {
       };
       await insertLink(db, link);
       commit([link, ...linksRef.current]);
+      announce();
       return link;
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const editLink = useCallback(
@@ -71,24 +80,27 @@ export function LinksProvider({ children }: { children: ReactNode }) {
       const link: Link = { ...existing, url: input.url, title: input.title.trim(), updatedAt: Date.now() };
       await updateLink(db, link);
       commit(linksRef.current.map((item) => (item.id === id ? link : item)));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const setFavorite = useCallback(
     async (id: string, favorite: boolean) => {
       await setRowFavorite(db, 'links', id, favorite);
       commit(linksRef.current.map((link) => (link.id === id ? { ...link, favorite } : link)));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const removeLink = useCallback(
     async (id: string) => {
       await deleteLink(db, id);
       commit(linksRef.current.filter((link) => link.id !== id));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const value = useMemo(

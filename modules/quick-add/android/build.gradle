@@ -1,0 +1,25 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'ing.zort'
+version = '1.0.0'
+
+expoModule {
+  v2 true
+}
+
+android {
+  namespace "expo.modules.quickadd"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // QuickAddActivity is a ReactActivity; the version comes from the app's React Native
+  implementation 'com.facebook.react:react-android'
+  implementation 'androidx.core:core-ktx:1.13.1'
+}

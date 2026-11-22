@@ -55,3 +55,8 @@ AGENTS.md
 
 # IDE
 .idea/
+
+# Signing keys: the upload key lives outside the project (see README); never commit one
+*.jks
+*.keystore
+!android/app/debug.keystore

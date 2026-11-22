@@ -20,20 +20,23 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { t } from '@/lib/i18n';
 import { useLinks } from '@/lib/links-context';
 import { radius, spacing, useColors } from '@/lib/theme';
+import { useListUnderneath } from '@/lib/use-list-underneath';
 import { normalizeUrl } from '@/lib/url';
 
 const MAX_URL = 2048;
 const MAX_TITLE = 100;
 
 export default function LinkEditorScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `url`: a new one's starting value, e.g. from the widget's quick-add window
+  const { id, url: initial } = useLocalSearchParams<{ id: string; url?: string }>();
   const { loaded } = useLinks();
   const colors = useColors();
+  useListUnderneath();
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
-  return <LinkEditor key={id} id={id} />;
+  return <LinkEditor key={id} id={id} initial={initial} />;
 }
 
-function LinkEditor({ id }: { id: string }) {
+function LinkEditor({ id, initial }: { id: string; initial?: string }) {
   const { links, createLink, editLink, removeLink } = useLinks();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -41,7 +44,7 @@ function LinkEditor({ id }: { id: string }) {
   const isNew = id === 'new';
   const [existing] = useState(() => (isNew ? undefined : links.find((link) => link.id === id)));
 
-  const [url, setUrl] = useState(existing?.url ?? '');
+  const [url, setUrl] = useState(existing?.url ?? initial ?? '');
   const [title, setTitle] = useState(existing?.title ?? '');
   // The address is checked once the user leaves the field or tries to save, not while typing
   const [checked, setChecked] = useState(false);

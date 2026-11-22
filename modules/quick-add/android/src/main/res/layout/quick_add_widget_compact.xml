@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick add widget, narrow: icons only.
+     A slim bar in the middle of its cells, however tall the launcher makes them: the root is
+     see-through and only the card (@android:id/background, rounded by Android 12+) is drawn. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <LinearLayout
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_vertical"
+    android:background="@drawable/quick_add_widget_background"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="5dp">
+
+    <LinearLayout
+      android:id="@+id/quick_add_pin_note"
+      android:layout_width="0dp"
+      android:layout_height="40dp"
+      android:layout_marginHorizontal="3dp"
+      android:layout_weight="1"
+      android:background="@drawable/quick_add_button"
+      android:contentDescription="@string/quick_add_pin_note"
+      android:gravity="center"
+      android:orientation="horizontal"
+      android:paddingHorizontal="8dp">
+
+      <ImageView
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_quick_add_pin" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/quick_add_note"
+      android:layout_width="0dp"
+      android:layout_height="40dp"
+      android:layout_marginHorizontal="3dp"
+      android:layout_weight="1"
+      android:background="@drawable/quick_add_button"
+      android:contentDescription="@string/quick_add_note"
+      android:gravity="center"
+      android:orientation="horizontal"
+      android:paddingHorizontal="8dp">
+
+      <ImageView
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_quick_add_note" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/quick_add_link"
+      android:layout_width="0dp"
+      android:layout_height="40dp"
+      android:layout_marginHorizontal="3dp"
+      android:layout_weight="1"
+      android:background="@drawable/quick_add_button"
+      android:contentDescription="@string/quick_add_link"
+      android:gravity="center"
+      android:orientation="horizontal"
+      android:paddingHorizontal="8dp">
+
+      <ImageView
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_quick_add_link" />
+    </LinearLayout>
+  </LinearLayout>
+</FrameLayout>

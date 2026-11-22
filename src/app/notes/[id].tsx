@@ -20,19 +20,22 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { t } from '@/lib/i18n';
 import { useMemos } from '@/lib/memos-context';
 import { limits, radius, spacing, useColors } from '@/lib/theme';
+import { useListUnderneath } from '@/lib/use-list-underneath';
 
 // Unlike Pin Note, nothing here has to fit in a notification
 const MAX_BODY = 10000;
 
 export default function MemoEditorScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `title`: a new one's starting value, e.g. from the widget's quick-add window
+  const { id, title: initial } = useLocalSearchParams<{ id: string; title?: string }>();
   const { loaded } = useMemos();
   const colors = useColors();
+  useListUnderneath();
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
-  return <MemoEditor key={id} id={id} />;
+  return <MemoEditor key={id} id={id} initial={initial} />;
 }
 
-function MemoEditor({ id }: { id: string }) {
+function MemoEditor({ id, initial }: { id: string; initial?: string }) {
   const { memos, createMemo, editMemo, removeMemo } = useMemos();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -40,7 +43,7 @@ function MemoEditor({ id }: { id: string }) {
   const isNew = id === 'new';
   const [existing] = useState(() => (isNew ? undefined : memos.find((memo) => memo.id === id)));
 
-  const [title, setTitle] = useState(existing?.title ?? '');
+  const [title, setTitle] = useState(existing?.title ?? initial ?? '');
   const [body, setBody] = useState(existing?.body ?? '');
   const [busy, setBusy] = useState(false);
   // Set once saved or deleted: leaving no longer asks to discard, and the screen closes

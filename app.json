@@ -8,14 +8,16 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.atifimal.zort",
+      "bundleIdentifier": "ing.zort.mobile",
       "supportsTablet": false,
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
-      "package": "com.atifimal.zort",
+      "package": "ing.zort.mobile",
+      "versionCode": 1,
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#f6f8fa",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -29,6 +31,7 @@
       "expo-sqlite",
       "expo-localization",
       "./plugins/with-short-cxx-dir",
+      "./plugins/with-release-signing",
       [
         "expo-splash-screen",
         {

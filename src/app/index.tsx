@@ -2,8 +2,10 @@ import { router, type Href } from 'expo-router';
 import { Image, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { backupStatus, toneColor } from '@/components/BackupStatus';
 import { Icon, type IconName } from '@/components/Icon';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useBackup } from '@/lib/backup';
 import { t } from '@/lib/i18n';
 import { useLinks } from '@/lib/links-context';
 import { useMemos } from '@/lib/memos-context';
@@ -49,19 +51,6 @@ export default function HomeScreen() {
       warning: shownCount > 0 && permission !== null && permission !== 'granted' ? t('notificationsOff') : undefined,
     },
     {
-      key: 'links',
-      title: t('linksTitle'),
-      description: t('linksDescription'),
-      icon: 'link',
-      href: '/links',
-      status:
-        links.length === 0
-          ? t('linksEmpty')
-          : links.length === 1
-            ? t('linksCountOne')
-            : t('linksCountMany', { n: links.length }),
-    },
-    {
       key: 'notes',
       title: t('notesTitle'),
       description: t('notesDescription'),
@@ -73,6 +62,19 @@ export default function HomeScreen() {
           : memos.length === 1
             ? t('countOne')
             : t('countMany', { n: memos.length }),
+    },
+    {
+      key: 'links',
+      title: t('linksTitle'),
+      description: t('linksDescription'),
+      icon: 'link',
+      href: '/links',
+      status:
+        links.length === 0
+          ? t('linksEmpty')
+          : links.length === 1
+            ? t('linksCountOne')
+            : t('linksCountMany', { n: links.length }),
     },
   ];
 
@@ -104,7 +106,39 @@ export default function HomeScreen() {
           <ToolCard key={tool.key} tool={tool} />
         ))}
       </View>
+
+      <BackupRow />
     </ScrollView>
+  );
+}
+
+/** Not a tool: where the data is backed up, and whether it's up to date. */
+function BackupRow() {
+  const colors = useColors();
+  const status = backupStatus(useBackup());
+  const color = toneColor(status.tone, colors);
+
+  return (
+    <Pressable
+      onPress={() => router.push('/backup')}
+      accessibilityRole="button"
+      accessibilityLabel={`${t('backupRowTitle')}. ${status.text}`}
+      style={({ pressed }) => [
+        styles.backup,
+        { backgroundColor: pressed ? colors.surfacePressed : 'transparent', borderColor: colors.border },
+      ]}
+    >
+      <Icon name={status.icon} size={20} color={color} />
+      <View style={styles.cardText}>
+        <Text style={[styles.backupTitle, { color: colors.text }]} numberOfLines={1}>
+          {t('backupRowTitle')}
+        </Text>
+        <Text style={[styles.cardStatus, { color }]} numberOfLines={1}>
+          {status.text}
+        </Text>
+      </View>
+      <Icon name="chevron" size={18} color={colors.textTertiary} />
+    </Pressable>
   );
 }
 
@@ -155,6 +189,17 @@ const styles = StyleSheet.create({
   wordmark: { width: 168, height: Math.round((168 * 362) / 720) },
   themeToggle: { position: 'absolute', right: 0, top: 0 },
   tools: { gap: spacing.sm + 2 },
+  backup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderStyle: 'dashed',
+  },
+  backupTitle: { fontSize: 15, fontWeight: '600' },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary        = 'One notification per pinned note, put back when dismissed.'
   s.description    = 'Local module of the Zort app.'
   s.author         = ''
-  s.homepage       = 'https://atifimal.com'
+  s.homepage       = 'https://zort.ing'
   s.license        = 'MIT'
   s.platforms      = { :ios => '16.4' }
   s.swift_version  = '5.9'

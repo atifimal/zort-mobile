@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { useDataChanges } from './data-events';
 import { setFavorite as setRowFavorite } from './db';
 import { deleteMemo, insertMemo, listMemos, updateMemo, type Memo } from './memos-db';
 
@@ -29,6 +30,13 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     memosRef.current = next;
     setMemos(next);
   }, []);
+
+  // Another copy of this provider (the widget's quick-add window, or the app) changed the notes
+  const announce = useDataChanges('memos', () => {
+    listMemos(db)
+      .then(commit)
+      .catch((error) => console.error('Could not reload memos', error));
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -58,9 +66,10 @@ export function MemosProvider({ children }: { children: ReactNode }) {
       };
       await insertMemo(db, memo);
       commit([memo, ...memosRef.current]);
+      announce();
       return memo;
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const editMemo = useCallback(
@@ -71,8 +80,9 @@ export function MemosProvider({ children }: { children: ReactNode }) {
       await updateMemo(db, memo);
       // The list is ordered by last edit, so the edited note moves to the top
       commit([memo, ...memosRef.current.filter((item) => item.id !== id)]);
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   // Not an edit: the note keeps its place among the others (updatedAt is unchanged)
@@ -80,16 +90,18 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     async (id: string, favorite: boolean) => {
       await setRowFavorite(db, 'memos', id, favorite);
       commit(memosRef.current.map((memo) => (memo.id === id ? { ...memo, favorite } : memo)));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const removeMemo = useCallback(
     async (id: string) => {
       await deleteMemo(db, id);
       commit(memosRef.current.filter((memo) => memo.id !== id));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const value = useMemo(

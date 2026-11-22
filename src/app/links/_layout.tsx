@@ -3,6 +3,9 @@ import { Stack } from 'expo-router';
 import { t } from '@/lib/i18n';
 import { useStackScreenOptions } from '@/lib/stack-options';
 
+// A link straight to an editor (from the widget) keeps the list underneath
+export const unstable_settings = { anchor: 'index' };
+
 export default function LinksLayout() {
   const screenOptions = useStackScreenOptions();
 

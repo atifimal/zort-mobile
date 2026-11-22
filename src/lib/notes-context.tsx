@@ -32,6 +32,7 @@ import {
   type Note,
   type PinWindow,
 } from './db';
+import { useDataChanges } from './data-events';
 import { nextStatusChange } from './pin-status';
 
 export type NoteInput = { title: string; body: string; pinned: boolean; window: PinWindow | null };
@@ -83,6 +84,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setNotes(next);
   }, []);
 
+  // Another copy of this provider (the widget's quick-add window, or the app) wrote to the
+  // notes: read them again, so this copy never syncs notifications from an old list
+  const reloadRef = useRef<() => void>(() => {});
+  const announce = useDataChanges('notes', () => reloadRef.current());
+
   // Native syncs run one after another so an older list can never overwrite a newer one
   const syncChain = useRef<Promise<void>>(Promise.resolve());
   const syncNotifications = useCallback(() => {
@@ -121,10 +127,19 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         else await setNotePinned(db, id, false, updatedAt);
       }
       commit(await listNotes(db));
-      if (actions.length > 0) await acknowledgeNoteActions(actions.map((item) => item.id)).catch(() => {});
+      if (actions.length > 0) {
+        announce();
+        await acknowledgeNoteActions(actions.map((item) => item.id)).catch(() => {});
+      }
     },
-    [db, commit],
+    [db, commit, announce],
   );
+
+  useEffect(() => {
+    reloadRef.current = () => {
+      applyNotificationActions({ reload: true }).catch((error) => console.error('Could not reload notes', error));
+    };
+  }, [applyNotificationActions]);
 
   const refreshPermission = useCallback(async () => {
     const status = await getPermissionStatus().catch(() => null);
@@ -196,6 +211,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const note: Note = { id: randomUUID(), ...normalize(input), favorite: false, createdAt: time, updatedAt: time };
       await insertNote(db, note);
       commit([note, ...notesRef.current]);
+      announce();
       setNow(time);
 
       // Ask at the moment it matters, once per launch, and only with the system dialog:
@@ -207,7 +223,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       }
       return note;
     },
-    [db, commit, refreshPermission],
+    [db, commit, announce, refreshPermission],
   );
 
   const editNote = useCallback(
@@ -217,9 +233,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const note: Note = { ...existing, ...normalize(input), updatedAt: Date.now() };
       await updateNote(db, note);
       commit(notesRef.current.map((item) => (item.id === id ? note : item)));
+      announce();
       setNow(note.updatedAt);
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const setPinned = useCallback(
@@ -227,25 +244,28 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const updatedAt = Date.now();
       await setNotePinned(db, id, pinned, updatedAt);
       commit(notesRef.current.map((note) => (note.id === id ? { ...note, pinned, updatedAt } : note)));
+      announce();
       setNow(updatedAt);
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const setFavorite = useCallback(
     async (id: string, favorite: boolean) => {
       await setRowFavorite(db, 'notes', id, favorite);
       commit(notesRef.current.map((note) => (note.id === id ? { ...note, favorite } : note)));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const removeNote = useCallback(
     async (id: string) => {
       await deleteNote(db, id);
       commit(notesRef.current.filter((note) => note.id !== id));
+      announce();
     },
-    [db, commit],
+    [db, commit, announce],
   );
 
   const value = useMemo(

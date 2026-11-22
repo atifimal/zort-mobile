@@ -1,6 +1,7 @@
 # Zort (mobil)
 
-zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pin Note**, **Links** ve **Notes**; yenileri
+zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pin Note**, **Notes** ve **Links**
+(Android'de ana ekrandan ekleme için bir de **Hızlı ekle** widget'ı var); yenileri
 aynı menüye eklenir (`src/app/index.tsx` içindeki `tools` listesi).
 
 Üç listede de **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
@@ -90,6 +91,96 @@ Bildirimlere girmeyen, yalnızca uygulamada duran notlar.
 - Liste son düzenlenene göre sıralı; kartta düzenleme tarihi görünür
 - Kodda Pin Note'un `Note` tipiyle karışmasın diye `Memo` adıyla geçer (`memos` tablosu)
 
+## Widget: Hızlı ekle (Android)
+
+Ana ekrana eklenen widget'ta her eklenebilen şey için bir düğme var: **Pin Note**, **Not**,
+**Link** (ana menüdeki sırayla). 4×1, hücrenin ortasında ince bir şerit; daraltılınca yalnızca ikonlar kalır (Android 12+).
+Renkler uygulamanınki, açık/koyu temayı telefona göre izler.
+
+Bir düğmeye dokununca uygulama açılmaz: ana ekranın üstünde alttan küçük bir **Hızlı ekle**
+penceresi kayar. Tür orada değiştirilebilir; girilen değer o türün zorunlu alanını doldurur:
+
+| Tür | Değer | Sonuç |
+|---|---|---|
+| Pin Note | başlık | iğneli, "Her zaman"; bildirim hemen çıkar |
+| Not | başlık | açıklamasız not |
+| Link | web adresi (Links'teki gibi doğrulanır) | başlıksız link |
+
+Altta yan yana iki düğme var:
+
+- **Ekle:** kaydeder; pencere kapanır ve "Linklere eklendi" gibi bir sistem bildirimi (toast)
+  görünür.
+- **Uygulamada aç:** alan boşsa seçili türün listesini açar. Bir şey yazıldıysa o türün yeni
+  kayıt ekranını yazılanla dolu açar (`zort://pin-notes/new?title=…`, `zort://links/new?url=…`),
+  açıklama, zaman aralığı ya da link başlığı da eklenip kaydedilir. Vazgeçilince altta liste
+  durur.
+
+Nasıl çalışıyor:
+
+- Widget klasik bir AppWidget (`modules/quick-add`, RemoteViews). `expo-widgets` Android'de
+  bir düğmeden belirli bir pencere açmayı desteklemiyor ve Compose bağımlılıkları getiriyordu.
+- Pencere ayrı, saydam bir Activity (`QuickAddActivity`): uygulamanın React Native'ini
+  paylaşır ve `index.ts`'de kayıtlı ikinci kök bileşen `QuickAdd`'i (`src/quick-add`) çizer.
+  Yani veritabanı, doğrulama ve bildirim eşitleme uygulamadakiyle aynı kod. Kendi görevinde
+  açılır, "Son kullanılanlar"da görünmez; kapanınca nerede kaldıysan oraya dönersin.
+- Uygulama arka planda açıksa onun listeleri de hemen yenilenir (`src/lib/data-events.ts`);
+  yoksa eski listeyle bildirimleri eşitleyip yeni notu kaldırabilirdi.
+- iOS'ta widget yok (WidgetKit uzantısı ayrı bir hedef ister).
+
+## Google ile giriş ve yedek
+
+Ana sayfanın altındaki **Google Drive yedeği** satırı → Yedekleme ekranı. Kullanıcı yalnızca
+"Google ile giriş yap"a basar; başka ayar yoktur.
+
+- **Nereye:** kullanıcının Drive'ındaki uygulamaya özel gizli klasör (`appDataFolder`, izin
+  `drive.appdata`): Zort kullanıcının hiçbir dosyasını göremez, yedek de Drive'da dosya olarak
+  görünmez. Tek dosya: `zort-backup.json`, üç tablonun bütün satırları (tema hariç).
+- **Ne zaman:** her değişiklikten 3 sn sonra; uygulama arka plana geçerken hemen (orada
+  zamanlayıcılar durur). Widget'tan eklenenler de dahil. "Yedeklenmedi" bilgisi cihazda saklanır,
+  uygulama kapanırsa sonraki açılışta tamamlanır. Bağlantı yoksa bir sonraki değişiklikte ya da
+  açılışta yeniden dener.
+- **Girişte:** Drive'da yedek yoksa cihazdaki veri ilk yedek olur. Yedek varsa ve cihaz boşsa
+  (format, yeni telefon, yeniden kurulum) kendiliğinden geri yüklenir. İkisinde de veri varsa
+  hangisinin kalacağı sorulur; seçilene kadar hiçbir şeyin üstüne yazılmaz.
+- **Geri yükleme** cihazdaki üç tablonun yerine geçer (tek işlemde, yarım kalmaz); listeler ve
+  Pin Note bildirimleri yeniden okunur.
+- **Çıkış:** veriler cihazda ve Drive'da kalır. "Drive'daki yedeği sil" yedeği silip çıkış yapar.
+- Tek cihaz için tasarlandı: iki cihaz aynı anda kullanılırsa son yedekleyen kazanır.
+
+### Yedek ve uygulama güncellemeleri
+
+Cihazdaki veri güncellemede hiç kaybolmaz: veritabanı şeması sürümlü (`DATABASE_VERSION`,
+`src/lib/db.ts`), her değişiklik ilk açılışta sırayla çalışan bir geçiş adımıdır. Drive yedeği
+de sürümlerle uyumlu kalacak şekilde kurulu (`src/lib/backup-format.ts`):
+
+- Yedek, onu alan uygulamanın şema sürümünü taşır; dosyada ve Drive meta verisinde
+  (`appProperties.schema`).
+- **Eski yedek, yeni uygulamada:** yedekte olmayan tablo (yedek o araçtan önce alınmış)
+  geri yüklemede cihazda olduğu gibi kalır; yedekte olmayan sütun varsayılan değerini alır;
+  uygulamanın artık bilmediği tablo ve sütunlar yok sayılır. Yeniden adlandırma gibi
+  varsayılanla çözülmeyen değişiklikler için `UPGRADES`'e o şema sürümünün adımı eklenir.
+- **Yeni yedek, eski uygulamada:** geri yüklenmez ve üstüne yazılmaz ("Zort'u güncelle"); yoksa
+  eski sürüm, bilmediği verileri yedekten düşürürdü.
+- Geri yükleme tek işlemdir: bir satır bile yazılamazsa hiçbir şey değişmez.
+
+**Yeni bir araç (menü) eklerken:** `db.ts`'de tabloyu yeni bir geçiş adımıyla oluştur ve
+`DATABASE_VERSION`'ı artır, sonra tablonun adını `backup-format.ts`'deki `BACKUP_TABLES`'a ekle.
+Yeni sütunlar `DEFAULT` ile eklenmeli. Testler (`npm test`) eski/yeni yedek kurallarını ve
+gerçek bir veritabanında yedek → geri yükleme gidiş-dönüşünü sınar.
+
+Kurulum (bir kez, uygulama sahibi): Google Cloud projesi `Zort`, Drive API açık, OAuth izin
+ekranı **In production** ("Testing"de izin 7 günde bir düşer), kapsam `drive.appdata`
+(hassas değil, inceleme gerekmez). İstemciler:
+
+- Android `Zort debug` ve `Zort release`: paket `ing.zort.mobile`, SHA-1'ler "İmza anahtarı"
+  tablosunda; Play'e çıkınca Play'in uygulama imzalama anahtarı için bir tane daha
+- Web `Zort web`: Client ID'si `src/lib/google-auth.ts`'de (gizli değil)
+
+Kütüphane `@react-native-google-signin/google-signin` (ücretsiz "Original" API). Config plugin'i
+eklenmedi: Android'de gerekmiyor, plugin de seçeneksiz Firebase dosyası bekliyor. iOS'a geçince
+bir iOS istemcisi oluşturup plugin'i `iosUrlScheme` ile ekle. `DEVELOPER_ERROR` (kod 10) = bu
+derlemenin SHA-1'i Google Cloud'da yok.
+
 ## Yapı
 
 ```
@@ -121,6 +212,13 @@ src/lib/
   links-db.ts, links-context.tsx   linkler (v3: links tablosu)
   memos-db.ts, memos-context.tsx   Notes sayfasının notları (v4: memos tablosu)
   clipboard.ts             kopyalama (Android 13+ kendi onayını gösterdiği için mesajı atlar)
+  data-events.ts           uygulama ve Hızlı ekle penceresi arasında "veri değişti" sinyali
+  backup.ts                Drive yedeği: ne zaman yedeklenir, giriş/geri yükleme akışı
+  backup-data.ts           yedeğin içeriği (anlık görüntü al, geri yükle)
+  backup-format.ts         yedek dosyasının biçimi; eski/yeni sürüm kuralları, BACKUP_TABLES
+  __tests__/               yedek biçimi ve gerçek veritabanıyla geri yükleme testleri
+src/test-utils/            testler için Node SQLite üzerinde expo-sqlite benzeri veritabanı
+  drive.ts, google-auth.ts Drive REST çağrıları; Google ile giriş ve erişim jetonu
   url.ts                   elle yazılan adresi düzeltme ve doğrulama
   open-link.ts             tarayıcıda / gizli sekmede açma
   i18n.ts, theme.ts        metinler (tr/en), zort.ing ile aynı renkler
@@ -131,6 +229,9 @@ modules/pinned-notifications/   bildirimler için native modül
                            zamanlanmış bildirim, İğneyi kaldır / Sil düğmeleri
   index.ts                 JS API: syncPinnedNotes, requestPermission, ...
 modules/link-opener/       yalnızca Android: varsayılan tarayıcıda gizli (ephemeral) sekme
+modules/quick-add/         yalnızca Android: Hızlı ekle widget'ı ve açtığı pencere (Activity)
+src/quick-add/             Hızlı ekle penceresinin React tarafı (QuickAddRoot, QuickAddSheet)
+index.ts                   giriş: expo-router + "QuickAdd" kök bileşeni
 plugins/with-short-cxx-dir.js   Windows'ta 260 karakter yol sınırını aşmak için derleme ayarı
 scripts/make-icons.mjs     uygulama ikonlarını zort.ing logosundan üretir
 ```
@@ -188,6 +289,7 @@ Gerekenler: Node 20+, Android için JDK 17+ ve Android SDK.
 ```bash
 npm install
 npm run typecheck
+npm test        # Jest (jest-expo); veritabanı testleri Node'un kendi SQLite'ıyla çalışır
 ```
 
 ### Android: telefona APK kurma
@@ -206,11 +308,46 @@ Gradle'a daha fazla bellek verir (varsayılan 512 MB metaspace R8 adımında yet
 ancak Reanimated'in kendi derlemesi 32-bit ARM'de (`armeabi-v7a`) sınırı yine aşıyor. Bu yüzden
 o mimari derlenmiyor.
 
-Release APK şu an Expo şablonundaki **debug anahtarıyla** imzalanıyor. Kendi kullanımın için
-yeterli. Ancak anahtarı değiştirirsen, telefondaki uygulama yeni APK ile güncellenmez;
-önce kaldırıp yeniden kurman gerekir (notlar da silinir). Kalıcı bir anahtar istersen
-`keytool` ile bir keystore oluşturup `android/app/build.gradle` içindeki `signingConfigs`'e
-ekle.
+Prebuild `--no-clean` ile çalışır: IntelliJ açıkken `android/` klasörü kilitlendiği için
+klasörü silip yeniden kuramıyor. Bir plugin ya da native kütüphane **kaldırıldığında** bir kez
+IDE kapalıyken `npx expo prebuild --platform android --clean` çalıştır.
+
+### İmza anahtarı
+
+Release derlemeleri (APK ve AAB) Zort'un kendi **yükleme anahtarıyla** imzalanır
+(`plugins/with-release-signing.js`). Anahtar ve şifresi projede değil:
+
+- anahtar: `C:\Users\mehme\.zort\zort-upload.jks` (alias `zort-upload`)
+- şifreler: `~/.gradle/gradle.properties` içindeki `ZORT_UPLOAD_*` satırları
+
+**İkisini de güvenli bir yere yedekle** (parola yöneticisi, şifreli bulut). Anahtar
+kaybolursa telefondaki uygulama bir daha güncellenemez; Play'de de yükleme anahtarı ancak
+Google'a başvurarak sıfırlanır. Anahtar yoksa (başka bir bilgisayar) derleme yine çalışır ama
+debug anahtarıyla imzalanır ve Gradle uyarır.
+
+| Anahtar | SHA-1 | Nerede kullanılır |
+|---|---|---|
+| debug (`android/app/debug.keystore`) | `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` | `expo run:android`, emülatör |
+| yükleme (`zort-upload.jks`) | `67:12:1F:81:F1:10:E7:81:2B:8B:D7:AC:64:AD:97:40:DA:72:67:AD` | `build:apk`, `build:aab` |
+
+Google girişi bu parmak izleriyle çalışır: Google Cloud'daki Android OAuth istemcileri bunları
+içermeli (aşağıda "Google ile giriş ve yedek").
+
+### Google Play'e hazırlık
+
+- `npm run build:aab` → `android/app/build/outputs/bundle/release/app-release.aab`
+  (arm64-v8a + x86_64). Play'e APK değil bu yüklenir.
+- Her yüklemede `app.json`'daki `android.versionCode` bir artmalı; `version` kullanıcıya
+  görünen sürüm.
+- Paket adı `ing.zort.mobile` (iOS bundle ID de aynı) Play'de kalıcıdır, sonradan değişmez.
+- Play App Signing açıkken Google uygulamayı kendi **uygulama imzalama anahtarıyla** yeniden
+  imzalar: Play Console → Test ve yayınla → Kurulum → Uygulama bütünlüğü'ndeki o SHA-1'i de
+  Google Cloud'a üçüncü bir Android istemcisi olarak ekle, yoksa Play'den kurulan uygulamada
+  Google girişi `DEVELOPER_ERROR` verir.
+- Android'in otomatik yedeği kapalı (`allowBackup: false`): asıl yedek Google Drive; günlük
+  sistem yedeği eski bir veritabanını sessizce geri yükleyip onunla çakışabilirdi.
+- Google hesabı verisi kullanıldığı için Play bir gizlilik politikası adresi ve "Veri
+  güvenliği" formu ister (ne saklandığı: notlar, linkler; nerede: kullanıcının kendi Drive'ı).
 
 Geliştirme sırasında: `npx expo run:android` (emülatör veya USB ile bağlı telefon).
 

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams, useNavigation, usePreventRemove, useRoute } from 'expo-router';
+import { router, useLocalSearchParams, usePreventRemove } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -23,38 +23,20 @@ import { t } from '@/lib/i18n';
 import { useNotes } from '@/lib/notes-context';
 import { defaultWindow } from '@/lib/pin-status';
 import { limits, radius, spacing, useColors } from '@/lib/theme';
+import { useListUnderneath } from '@/lib/use-list-underneath';
 
 export default function NoteEditorScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `title`: a new one's starting value, e.g. from the widget's quick-add window
+  const { id, title: initial } = useLocalSearchParams<{ id: string; title?: string }>();
   const { loaded } = useNotes();
   const colors = useColors();
   useListUnderneath();
   // Opened from a notification on a cold start, the notes may still be loading
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
-  return <NoteEditor key={id} id={id} />;
+  return <NoteEditor key={id} id={id} initial={initial} />;
 }
 
-/**
- * Opened from a notification, the editor can be the only screen in Pin Note's stack (the
- * layout's anchor isn't applied when the app starts from a link), so Back would skip the
- * note list. This puts the list underneath, keeping the editor as it is.
- */
-function useListUnderneath() {
-  const navigation = useNavigation();
-  const route = useRoute();
-  useEffect(() => {
-    const state = navigation.getState();
-    if (!state || state.routes.length !== 1 || state.routes[0]?.key !== route.key) return;
-    navigation.reset({
-      index: 1,
-      routes: [{ name: 'index' }, { name: route.name, key: route.key, params: route.params }],
-    } as Parameters<typeof navigation.reset>[0]);
-    // Only when the editor first opens
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-}
-
-function NoteEditor({ id }: { id: string }) {
+function NoteEditor({ id, initial }: { id: string; initial?: string }) {
   const { notes, now, createNote, editNote, removeNote } = useNotes();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -63,7 +45,7 @@ function NoteEditor({ id }: { id: string }) {
   // The note as it was when the editor opened; edits are compared against this
   const [existing] = useState(() => (isNew ? undefined : notes.find((note) => note.id === id)));
 
-  const [title, setTitle] = useState(existing?.title ?? '');
+  const [title, setTitle] = useState(existing?.title ?? initial ?? '');
   const [body, setBody] = useState(existing?.body ?? '');
   // New notes are pinned, always; the window keeps its times while "Always" is ticked
   const [pinned, setPinned] = useState(existing?.pinned ?? true);
