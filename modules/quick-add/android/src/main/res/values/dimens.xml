@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Corner radii of the widget card and of its buttons; values-v31 takes the launcher's own -->
+<resources>
+  <dimen name="qa_widget_radius">24dp</dimen>
+  <dimen name="qa_button_radius">18dp</dimen>
+</resources>

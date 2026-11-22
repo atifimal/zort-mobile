@@ -1,20 +1,20 @@
 # Zort (mobil)
 
-zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pin Note**, **Notes** ve **Links**
+zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pins**, **Notes** ve **Links**
 (Android'de ana ekrandan ekleme için bir de **Hızlı ekle** widget'ı var); yenileri
 aynı menüye eklenir (`src/app/index.tsx` içindeki `tools` listesi).
 
 Üç listede de **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
 favoriler listenin en üstünde durur; kendi aralarında ve geri kalanlarda listenin normal
 sıralaması korunur (`src/lib/favorites.ts`, v5: her tabloda `favorite` sütunu). Favori yapmak
-düzenleme sayılmaz, notun düzenleme tarihini değiştirmez. Pin Note'ta sıra: favoriler, sonra
+düzenleme sayılmaz, notun düzenleme tarihini değiştirmez. Pins'te sıra: favoriler, sonra
 iğneliler, sonra iğnesizler (her grupta en yeni üstte).
 
 Android'de `expo-symbols` ikonları içi boş Material Symbols fontuyla çiziyor. Favorinin dolu
 yıldızı için dolu fonttan yalnızca yıldız glifi alınıp `assets/fonts/star-filled.ttf`'e
 konuyor (1,6 KB; fontun tamamı 1,4 MB). Yeniden üretmek için: `npm run star-font`.
 
-## Pin Note
+## Pins
 
 İğnelediğin her not ayrı bir bildirim olarak durur ve iğnesini kaldırana (ya da silene) kadar
 bildirimlerden kalkmaz.
@@ -89,11 +89,11 @@ Bildirimlere girmeyen, yalnızca uygulamada duran notlar.
 - **Dokununca** (ya da basılı tutunca) menü: **Notu kopyala** (başlık, boş satır, açıklama),
   Düzenle, Sil
 - Liste son düzenlenene göre sıralı; kartta düzenleme tarihi görünür
-- Kodda Pin Note'un `Note` tipiyle karışmasın diye `Memo` adıyla geçer (`memos` tablosu)
+- Kodda Pins'in `Note` tipiyle karışmasın diye `Memo` adıyla geçer (`memos` tablosu)
 
 ## Widget: Hızlı ekle (Android)
 
-Ana ekrana eklenen widget'ta her eklenebilen şey için bir düğme var: **Pin Note**, **Not**,
+Ana ekrana eklenen widget'ta her eklenebilen şey için bir düğme var: **Pins**, **Not**,
 **Link** (ana menüdeki sırayla). 4×1, hücrenin ortasında ince bir şerit; daraltılınca yalnızca ikonlar kalır (Android 12+).
 Renkler uygulamanınki, açık/koyu temayı telefona göre izler.
 
@@ -102,7 +102,7 @@ penceresi kayar. Tür orada değiştirilebilir; girilen değer o türün zorunlu
 
 | Tür | Değer | Sonuç |
 |---|---|---|
-| Pin Note | başlık | iğneli, "Her zaman"; bildirim hemen çıkar |
+| Pins | başlık | iğneli, "Her zaman"; bildirim hemen çıkar |
 | Not | başlık | açıklamasız not |
 | Link | web adresi (Links'teki gibi doğrulanır) | başlıksız link |
 
@@ -143,7 +143,7 @@ Ana sayfanın altındaki **Google Drive yedeği** satırı → Yedekleme ekranı
   (format, yeni telefon, yeniden kurulum) kendiliğinden geri yüklenir. İkisinde de veri varsa
   hangisinin kalacağı sorulur; seçilene kadar hiçbir şeyin üstüne yazılmaz.
 - **Geri yükleme** cihazdaki üç tablonun yerine geçer (tek işlemde, yarım kalmaz); listeler ve
-  Pin Note bildirimleri yeniden okunur.
+  Pins bildirimleri yeniden okunur.
 - **Çıkış:** veriler cihazda ve Drive'da kalır. "Drive'daki yedeği sil" yedeği silip çıkış yapar.
 - Tek cihaz için tasarlandı: iki cihaz aynı anda kullanılırsa son yedekleyen kazanır.
 
@@ -188,7 +188,7 @@ src/app/                   ekranlar (Expo Router)
   _layout.tsx              veritabanı, bildirim eşitleme, iOS'ta bildirime dokununca not açma
   index.tsx                Zort ana ekranı: araç menüsü
   pin-notes/
-    _layout.tsx            Pin Note ekranlarının yığını
+    _layout.tsx            Pins ekranlarının yığını
     index.tsx              not listesi
     [id].tsx               not ekleme/düzenleme (id = "new" yeni not)
   links/

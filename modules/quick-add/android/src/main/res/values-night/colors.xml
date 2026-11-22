@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <color name="qa_surface">#0D1117</color>
-  <color name="qa_border">#3D444D</color>
-  <color name="qa_tile">#12263F</color>
-  <color name="qa_tile_pressed">#1B3A5E</color>
-  <color name="qa_accent">#4493F8</color>
+  <color name="qa_surface">#E60D1117</color>
+  <color name="qa_pin_tile">#3A2210</color>
+  <color name="qa_pin_tile_pressed">#55321A</color>
+  <color name="qa_pin">#F0883E</color>
+  <color name="qa_note_tile">#12263F</color>
+  <color name="qa_note_tile_pressed">#1B3A5E</color>
+  <color name="qa_note">#4493F8</color>
+  <color name="qa_link_tile">#0F2E1A</color>
+  <color name="qa_link_tile_pressed">#1A4A2A</color>
+  <color name="qa_link">#3FB950</color>
   <color name="qa_scrim">#99000000</color>
 </resources>

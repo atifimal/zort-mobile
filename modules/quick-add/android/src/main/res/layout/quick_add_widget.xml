@@ -1,112 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quick add widget: icon and name on each button.
+<!-- Quick add widget: the Zort logo (opens the app), then a button for each type, each in its
+     own color, with icon and name.
      A slim bar in the middle of its cells, however tall the launcher makes them: the root is
      see-through and only the card (@android:id/background, rounded by Android 12+) is drawn. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:layout_width="match_parent"
   android:layout_height="match_parent">
 
-  <LinearLayout
-    android:id="@android:id/background"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_gravity="center_vertical"
-    android:background="@drawable/quick_add_widget_background"
-    android:gravity="center"
-    android:orientation="horizontal"
-    android:padding="5dp">
+  <LinearLayout android:id="@android:id/background" style="@style/QuickAddWidget.Bar">
+
+    <ImageView
+      android:id="@+id/quick_add_open_app"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_marginEnd="3dp"
+      android:contentDescription="@string/quick_add_open_app"
+      android:padding="6dp"
+      android:scaleType="fitCenter"
+      android:src="@drawable/quick_add_logo" />
 
     <LinearLayout
       android:id="@+id/quick_add_pin_note"
-      android:layout_width="0dp"
-      android:layout_height="40dp"
-      android:layout_marginHorizontal="3dp"
-      android:layout_weight="1"
-      android:background="@drawable/quick_add_button"
-      android:contentDescription="@string/quick_add_pin_note"
-      android:gravity="center"
-      android:orientation="horizontal"
-      android:paddingHorizontal="8dp">
+      style="@style/QuickAddWidget.Button"
+      android:background="@drawable/quick_add_button_pin"
+      android:contentDescription="@string/quick_add_pin_note">
 
-      <ImageView
-        android:layout_width="18dp"
-        android:layout_height="18dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_quick_add_pin" />
+      <ImageView style="@style/QuickAddWidget.Icon" android:src="@drawable/ic_quick_add_pin" />
 
       <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
-        android:ellipsize="end"
-        android:fontFamily="sans-serif-medium"
-        android:importantForAccessibility="no"
-        android:maxLines="1"
+        style="@style/QuickAddWidget.Label"
         android:text="@string/quick_add_pin_note"
-        android:textColor="@color/qa_accent"
-        android:textSize="13sp" />
+        android:textColor="@color/qa_pin" />
     </LinearLayout>
 
     <LinearLayout
       android:id="@+id/quick_add_note"
-      android:layout_width="0dp"
-      android:layout_height="40dp"
-      android:layout_marginHorizontal="3dp"
-      android:layout_weight="1"
-      android:background="@drawable/quick_add_button"
-      android:contentDescription="@string/quick_add_note"
-      android:gravity="center"
-      android:orientation="horizontal"
-      android:paddingHorizontal="8dp">
+      style="@style/QuickAddWidget.Button"
+      android:background="@drawable/quick_add_button_note"
+      android:contentDescription="@string/quick_add_note">
 
-      <ImageView
-        android:layout_width="18dp"
-        android:layout_height="18dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_quick_add_note" />
+      <ImageView style="@style/QuickAddWidget.Icon" android:src="@drawable/ic_quick_add_note" />
 
       <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
-        android:ellipsize="end"
-        android:fontFamily="sans-serif-medium"
-        android:importantForAccessibility="no"
-        android:maxLines="1"
+        style="@style/QuickAddWidget.Label"
         android:text="@string/quick_add_note"
-        android:textColor="@color/qa_accent"
-        android:textSize="13sp" />
+        android:textColor="@color/qa_note" />
     </LinearLayout>
 
     <LinearLayout
       android:id="@+id/quick_add_link"
-      android:layout_width="0dp"
-      android:layout_height="40dp"
-      android:layout_marginHorizontal="3dp"
-      android:layout_weight="1"
-      android:background="@drawable/quick_add_button"
-      android:contentDescription="@string/quick_add_link"
-      android:gravity="center"
-      android:orientation="horizontal"
-      android:paddingHorizontal="8dp">
+      style="@style/QuickAddWidget.Button"
+      android:background="@drawable/quick_add_button_link"
+      android:contentDescription="@string/quick_add_link">
 
-      <ImageView
-        android:layout_width="18dp"
-        android:layout_height="18dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_quick_add_link" />
+      <ImageView style="@style/QuickAddWidget.Icon" android:src="@drawable/ic_quick_add_link" />
 
       <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
-        android:ellipsize="end"
-        android:fontFamily="sans-serif-medium"
-        android:importantForAccessibility="no"
-        android:maxLines="1"
+        style="@style/QuickAddWidget.Label"
         android:text="@string/quick_add_link"
-        android:textColor="@color/qa_accent"
-        android:textSize="13sp" />
+        android:textColor="@color/qa_link" />
     </LinearLayout>
   </LinearLayout>
 </FrameLayout>

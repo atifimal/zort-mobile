@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="quick_add_widget_label">Hızlı ekle</string>
-  <string name="quick_add_widget_description">Ana ekrandan Pin Note, not ya da link ekle.</string>
-  <string name="quick_add_pin_note">Pin Note</string>
+  <string name="quick_add_widget_description">Ana ekrandan pin, not ya da link ekle.</string>
+  <string name="quick_add_pin_note">Pins</string>
   <string name="quick_add_link">Link</string>
   <string name="quick_add_note">Not</string>
+  <string name="quick_add_open_app">Zort’u aç</string>
 </resources>

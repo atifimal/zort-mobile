@@ -1,7 +1,7 @@
 import { getLocales } from 'expo-localization';
 
 const en = {
-  pinNoteTitle: 'Pin Note',
+  pinNoteTitle: 'Pins',
   darkTheme: 'Dark theme',
   pinNoteDescription: 'Pin notes to your notifications',
   pinNoteEmpty: 'No notes pinned yet',
@@ -102,7 +102,7 @@ const en = {
   backupSyncing: 'Backing up…',
   backupPending: 'Waiting to back up',
   backupErrorShort: 'The last backup failed',
-  backupIntro: 'Your Pin Notes, notes and links are backed up to your Google Drive, in a hidden folder only Zort can see. On a new phone or after reinstalling, sign in with the same account and they come back.',
+  backupIntro: 'Your Pins, notes and links are backed up to your Google Drive, in a hidden folder only Zort can see. On a new phone or after reinstalling, sign in with the same account and they come back.',
   backupAuto: 'Backed up by itself a few seconds after each change.',
   backupSignIn: 'Sign in with Google',
   backupNow: 'Back up now',
@@ -121,7 +121,7 @@ const en = {
   backupRestoreMessage: 'From {date}: {remote}\n\nIt replaces what’s on this phone ({local}).',
   backupRestoreAction: 'Restore',
   backupNothing: 'There’s no backup in Drive yet.',
-  backupCounts: '{pins} Pin Notes, {notes} notes, {links} links',
+  backupCounts: '{pins} pins, {notes} notes, {links} links',
   backupFirstDone: 'Backed up to Drive',
   backupOffline: 'No internet connection. It will be backed up once you’re online.',
   backupFailed: 'The backup could not be made.',
@@ -132,7 +132,7 @@ const en = {
   backupNeedsUpdate: 'This backup was made by a newer version of Zort. Update the app to use it.',
   backupInvalid: 'The backup in Drive can’t be read.',
   close: 'Close',
-  quickTypePin: 'Pin note',
+  quickTypePin: 'Pins',
   quickTypeLink: 'Link',
   quickTypeNote: 'Note',
   quickPinPlaceholder: 'What should stay in your notifications?',
@@ -145,7 +145,7 @@ const en = {
 type Strings = { [K in keyof typeof en]: string };
 
 const tr: Strings = {
-  pinNoteTitle: 'Pin Note',
+  pinNoteTitle: 'Pins',
   darkTheme: 'Koyu tema',
   pinNoteDescription: 'Notlarını bildirimlere iğnele',
   pinNoteEmpty: 'Henüz iğnelenmiş not yok',
@@ -246,7 +246,7 @@ const tr: Strings = {
   backupSyncing: 'Yedekleniyor…',
   backupPending: 'Yedeklenmeyi bekliyor',
   backupErrorShort: 'Son yedekleme başarısız',
-  backupIntro: 'Pin Note’ların, notların ve linklerin Google Drive’ına, yalnızca Zort’un görebildiği gizli bir klasöre yedeklenir. Yeni telefonda ya da uygulamayı yeniden kurunca aynı hesapla giriş yap, geri gelsin.',
+  backupIntro: 'Pins’lerin, notların ve linklerin Google Drive’ına, yalnızca Zort’un görebildiği gizli bir klasöre yedeklenir. Yeni telefonda ya da uygulamayı yeniden kurunca aynı hesapla giriş yap, geri gelsin.',
   backupAuto: 'Her değişiklikten birkaç saniye sonra kendiliğinden yedeklenir.',
   backupSignIn: 'Google ile giriş yap',
   backupNow: 'Şimdi yedekle',
@@ -265,7 +265,7 @@ const tr: Strings = {
   backupRestoreMessage: '{date} tarihli: {remote}\n\nBu telefondakilerin yerine geçer ({local}).',
   backupRestoreAction: 'Geri yükle',
   backupNothing: 'Drive’da henüz yedek yok.',
-  backupCounts: '{pins} Pin Note, {notes} not, {links} link',
+  backupCounts: '{pins} pin, {notes} not, {links} link',
   backupFirstDone: 'Drive’a yedeklendi',
   backupOffline: 'İnternet bağlantısı yok. Bağlanınca yedeklenecek.',
   backupFailed: 'Yedek alınamadı.',
@@ -276,7 +276,7 @@ const tr: Strings = {
   backupNeedsUpdate: 'Bu yedek Zort’un daha yeni bir sürümüyle alınmış. Kullanmak için uygulamayı güncelle.',
   backupInvalid: 'Drive’daki yedek okunamadı.',
   close: 'Kapat',
-  quickTypePin: 'Pin Note',
+  quickTypePin: 'Pins',
   quickTypeLink: 'Link',
   quickTypeNote: 'Not',
   quickPinPlaceholder: 'Bildirimlerinde ne dursun?',

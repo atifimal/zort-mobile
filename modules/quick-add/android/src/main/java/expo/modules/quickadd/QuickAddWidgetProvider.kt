@@ -19,11 +19,14 @@ class QuickAddWidgetProvider : AppWidgetProvider() {
   }
 
   private fun views(context: Context): RemoteViews {
-    val regular = layout(context, R.layout.quick_add_widget)
+    val regular = layout(context, R.layout.quick_add_widget).apply {
+      // Only the regular layout has the logo; it opens the app where it was left
+      openAppIntent(context)?.let { setOnClickPendingIntent(R.id.quick_add_open_app, it) }
+    }
     // Android 12+ picks the layout that fits: icons only when the widget is narrow
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return regular
     val compact = layout(context, R.layout.quick_add_widget_compact)
-    return RemoteViews(mapOf(SizeF(40f, 40f) to compact, SizeF(230f, 40f) to regular))
+    return RemoteViews(mapOf(SizeF(40f, 40f) to compact, SizeF(260f, 40f) to regular))
   }
 
   private fun layout(context: Context, layoutId: Int) =
@@ -39,6 +42,16 @@ class QuickAddWidgetProvider : AppWidgetProvider() {
       QuickAddActivity.intent(context, type),
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
+
+  private fun openAppIntent(context: Context): PendingIntent? {
+    val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
+    return PendingIntent.getActivity(
+      context,
+      0,
+      launch,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+  }
 
   companion object {
     // The values are the `type` the quick-add window understands (src/quick-add)

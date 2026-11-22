@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- zort.ing's palette, as in the app (src/lib/theme.ts); values-night has the dark theme -->
+<!-- zort.ing's palette, as in the app (src/lib/theme.ts); values-night has the dark theme.
+     Each type has its own color on the widget: Pins the logo's orange, notes blue, links green. -->
 <resources>
-  <color name="qa_surface">#FFFFFF</color>
-  <color name="qa_border">#D1D9E0</color>
-  <color name="qa_tile">#DDF4FF</color>
-  <color name="qa_tile_pressed">#C2E8FF</color>
-  <color name="qa_accent">#0969DA</color>
+  <color name="qa_surface">#EBFFFFFF</color>
+  <color name="qa_pin_tile">#FFF1E0</color>
+  <color name="qa_pin_tile_pressed">#FFDDB8</color>
+  <color name="qa_pin">#C2410C</color>
+  <color name="qa_note_tile">#DDF4FF</color>
+  <color name="qa_note_tile_pressed">#C2E8FF</color>
+  <color name="qa_note">#0969DA</color>
+  <color name="qa_link_tile">#DAFBE1</color>
+  <color name="qa_link_tile_pressed">#B8F0C6</color>
+  <color name="qa_link">#1A7F37</color>
   <color name="qa_scrim">#66000000</color>
 </resources>

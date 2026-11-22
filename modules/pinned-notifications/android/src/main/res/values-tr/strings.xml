@@ -1,5 +1,5 @@
 <resources>
-  <string name="pinned_notes_channel_name">Pin Note</string>
+  <string name="pinned_notes_channel_name">Pins</string>
   <string name="pinned_notes_channel_description">İğnelediğin notlar, Zort\'ta iğneli kaldıkça bildirim panelinde durur.</string>
   <string name="pinned_note_action_unpin">İğneyi kaldır</string>
   <string name="pinned_note_action_delete">Sil</string>
