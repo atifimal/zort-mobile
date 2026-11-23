@@ -44,6 +44,7 @@ const icons = {
   save: { ios: 'square.and.arrow.down', android: 'download' },
   share: { ios: 'square.and.arrow.up', android: 'share' },
   fileImport: { ios: 'tray.and.arrow.up', android: 'upload_file' },
+  label: { ios: 'tag', android: 'label' },
 } satisfies Record<string, Extract<SymbolViewProps['name'], object>>;
 
 export type IconName = keyof typeof icons;

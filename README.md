@@ -90,6 +90,12 @@ Bildirimlere girmeyen, yalnızca uygulamada duran notlar.
 - **Dokununca** (ya da basılı tutunca) menü: **Notu kopyala** (başlık, boş satır, açıklama),
   Düzenle, Sil
 - Liste son düzenlenene göre sıralı; kartta düzenleme tarihi görünür
+- **Etiketler:** adı ve rengi olan etiketler, not başına en fazla bir tane. Etiketli notun kartı
+  listede etiketin renginde görünür. Not düzenleyicide seçilir; listenin üstündeki çiplerle tek
+  bir etiketin notları süzülür. Etiketler kendi ekranında (`notes/labels`) eklenir, düzenlenir,
+  silinir; silinen etiketin notları etiketsiz kalır. Renkler sabit bir paletten
+  (`label-colors.ts`), adıyla saklanır; her birinin açık ve koyu tema tonu ayrı.
+  (v9: `memo_labels` tablosu, `memos.label_id`)
 - Kodda Pins'in `Note` tipiyle karışmasın diye `Memo` adıyla geçer (`memos` tablosu)
 
 ## Görevler
@@ -326,13 +332,15 @@ src/components/
   ModalHeader.tsx          düzenleme ekranlarının Vazgeç / başlık / Kaydet çubuğu
   ActionSheet.tsx          alttan açılan küçük eylem menüsü
   LinkCard.tsx, MemoCard.tsx   listedeki link / not
+  LabelChip.tsx            etiket seçme çipi ve not kartındaki etiket
   Toast.tsx                "Link kopyalandı" gibi kısa mesaj
 src/lib/
   db.ts                    SQLite şeması (v2: pinned, pin_start, pin_end) ve sorgular
   notes-context.tsx        notlar, bildirimleri eşitleme, bildirim düğmelerinin kuyruğunu işleme
   pin-status.ts            iğne durumu (iğnesiz / her zaman / başlayacak / görünüyor / bitti)
   links-db.ts, links-context.tsx   linkler (v3: links tablosu)
-  memos-db.ts, memos-context.tsx   Notes sayfasının notları (v4: memos tablosu)
+  memos-db.ts, memos-context.tsx   Notes sayfasının notları (v4: memos tablosu) ve etiketleri (v9)
+  label-colors.ts          etiket renkleri: palet, açık/koyu tema tonları
   tasks-db.ts, tasks-context.tsx   görevler (v6: tasks tablosu), widget eşitleme ve kuyruğu
   recurrence.ts            yineleme kuralları: hangi günler (saf, testli)
   task-logic.ts            zamanlama, tamamlama, gruplama, widget'a giden görev (saf, testli)

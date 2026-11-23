@@ -255,6 +255,36 @@ const en = {
   fileImportFailed: 'The backup could not be restored.',
   fileUndone: 'Back as it was',
   backupOffWithFile: 'Drive off · Last file {date}',
+  labels: 'Labels',
+  label: 'Label',
+  labelNone: 'None',
+  labelFilterAll: 'All',
+  manageLabels: 'Edit labels',
+  done: 'Done',
+  newLabel: 'New label',
+  editLabel: 'Edit label',
+  labelNamePlaceholder: 'Label name',
+  labelColor: 'Color',
+  addLabel: 'Add label',
+  deleteLabel: 'Delete label',
+  deleteLabelTitle: 'Delete this label?',
+  deleteLabelMessage: 'Its notes stay, just without a label.',
+  labelNameRequired: 'Give the label a name.',
+  labelNameTaken: 'There’s already a label with this name.',
+  labelSaveFailed: 'The label could not be saved.',
+  labelDeleteFailed: 'The label could not be deleted.',
+  labelsEmpty: 'No labels yet. Add your first one below.',
+  labelsHint: 'A note with a label takes its color in the list.',
+  labelFilterEmpty: 'No notes with this label',
+  colorRed: 'Red',
+  colorOrange: 'Orange',
+  colorYellow: 'Yellow',
+  colorGreen: 'Green',
+  colorTeal: 'Teal',
+  colorBlue: 'Blue',
+  colorPurple: 'Purple',
+  colorPink: 'Pink',
+  colorGray: 'Gray',
 } as const;
 
 type Strings = { [K in keyof typeof en]: string };
@@ -514,6 +544,36 @@ const tr: Strings = {
   fileImportFailed: 'Yedek geri yüklenemedi.',
   fileUndone: 'Eski haline döndü',
   backupOffWithFile: 'Drive kapalı · Son dosya: {date}',
+  labels: 'Etiketler',
+  label: 'Etiket',
+  labelNone: 'Yok',
+  labelFilterAll: 'Tümü',
+  manageLabels: 'Etiketleri düzenle',
+  done: 'Bitti',
+  newLabel: 'Yeni etiket',
+  editLabel: 'Etiketi düzenle',
+  labelNamePlaceholder: 'Etiket adı',
+  labelColor: 'Renk',
+  addLabel: 'Etiket ekle',
+  deleteLabel: 'Etiketi sil',
+  deleteLabelTitle: 'Bu etiket silinsin mi?',
+  deleteLabelMessage: 'Notları silinmez, yalnızca etiketsiz kalır.',
+  labelNameRequired: 'Etikete bir ad ver.',
+  labelNameTaken: 'Bu adda bir etiket zaten var.',
+  labelSaveFailed: 'Etiket kaydedilemedi.',
+  labelDeleteFailed: 'Etiket silinemedi.',
+  labelsEmpty: 'Henüz etiket yok. İlkini aşağıdan ekle.',
+  labelsHint: 'Etiketli bir not, listede etiketinin renginde görünür.',
+  labelFilterEmpty: 'Bu etikette not yok',
+  colorRed: 'Kırmızı',
+  colorOrange: 'Turuncu',
+  colorYellow: 'Sarı',
+  colorGreen: 'Yeşil',
+  colorTeal: 'Turkuaz',
+  colorBlue: 'Mavi',
+  colorPurple: 'Mor',
+  colorPink: 'Pembe',
+  colorGray: 'Gri',
 };
 
 const dictionaries: Record<string, Strings> = { en, tr };
@@ -523,7 +583,9 @@ const deviceLanguage = getLocales()[0]?.languageCode ?? 'en';
 export const language = deviceLanguage in dictionaries ? deviceLanguage : 'en';
 const strings: Strings = dictionaries[language] ?? en;
 
-export function t(key: keyof Strings, params?: Record<string, string | number>): string {
+export type TranslationKey = keyof Strings;
+
+export function t(key: TranslationKey,params?: Record<string, string | number>): string {
   let text = strings[key];
   if (params) {
     for (const [name, value] of Object.entries(params)) text = text.replace(`{${name}}`, String(value));

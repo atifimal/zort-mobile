@@ -28,7 +28,7 @@ type NoteRow = {
   updated_at: number;
 };
 
-export const DATABASE_VERSION = 8;
+export const DATABASE_VERSION = 9;
 
 /** The tables whose rows can be marked as favorites (all with a `favorite` column, v5; tasks v6). */
 export type FavoriteTable = 'notes' | 'links' | 'memos' | 'tasks';
@@ -171,6 +171,23 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       `);
     });
     version = 8;
+  }
+
+  if (version === 8) {
+    // Labels on the Notes page: a name and a color each, at most one per note (memos-db.ts)
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS memo_labels (
+          id         TEXT PRIMARY KEY NOT NULL,
+          name       TEXT NOT NULL,
+          color      TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+        ALTER TABLE memos ADD COLUMN label_id TEXT;
+        PRAGMA user_version = 9;
+      `);
+    });
+    version = 9;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
+import { LabelChip } from '@/components/LabelChip';
 import { ModalHeader } from '@/components/ModalHeader';
 import { t } from '@/lib/i18n';
 import { useMemos } from '@/lib/memos-context';
@@ -36,7 +37,7 @@ export default function MemoEditorScreen() {
 }
 
 function MemoEditor({ id, initial }: { id: string; initial?: string }) {
-  const { memos, createMemo, editMemo, removeMemo } = useMemos();
+  const { memos, labels, createMemo, editMemo, removeMemo } = useMemos();
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -45,12 +46,17 @@ function MemoEditor({ id, initial }: { id: string; initial?: string }) {
 
   const [title, setTitle] = useState(existing?.title ?? initial ?? '');
   const [body, setBody] = useState(existing?.body ?? '');
+  const [chosenLabel, setLabelId] = useState(existing?.labelId ?? null);
+  // A label deleted while the editor is open (on the labels screen) is no longer a choice
+  const known = (id: string | null | undefined) => (id && labels.some((label) => label.id === id) ? id : null);
+  const labelId = known(chosenLabel);
   const [busy, setBusy] = useState(false);
   // Set once saved or deleted: leaving no longer asks to discard, and the screen closes
   const [done, setDone] = useState(false);
   const bodyRef = useRef<TextInputInstance>(null);
 
-  const dirty = title !== (existing?.title ?? '') || body !== (existing?.body ?? '');
+  const dirty =
+    title !== (existing?.title ?? '') || body !== (existing?.body ?? '') || labelId !== known(existing?.labelId);
   const canSave = title.trim().length > 0 && !busy;
 
   // Leaving with unsaved changes asks first. "Discard" turns the guard off and replays the
@@ -81,8 +87,8 @@ function MemoEditor({ id, initial }: { id: string; initial?: string }) {
     }
     setBusy(true);
     try {
-      if (isNew) await createMemo({ title, body });
-      else if (existing) await editMemo(existing.id, { title, body });
+      if (isNew) await createMemo({ title, body, labelId });
+      else if (existing) await editMemo(existing.id, { title, body, labelId });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setDone(true);
     } catch (error) {
@@ -181,6 +187,28 @@ function MemoEditor({ id, initial }: { id: string; initial?: string }) {
           ) : null}
         </View>
 
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('label')}</Text>
+          <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={t('label')}>
+            <LabelChip text={t('labelNone')} selected={labelId === null} onPress={() => setLabelId(null)} />
+            {labels.map((label) => (
+              <LabelChip
+                key={label.id}
+                text={label.name}
+                color={label.color}
+                selected={labelId === label.id}
+                onPress={() => setLabelId(label.id)}
+              />
+            ))}
+            <LabelChip
+              text={labels.length > 0 ? t('manageLabels') : t('newLabel')}
+              icon={labels.length > 0 ? 'edit' : 'add'}
+              selected={false}
+              onPress={() => router.push('/notes/labels')}
+            />
+          </View>
+        </View>
+
         {existing ? (
           <Pressable
             onPress={confirmDelete}
@@ -218,6 +246,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
+  section: { gap: spacing.sm },
+  sectionTitle: { fontSize: 13, fontWeight: '600', marginLeft: spacing.xs },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   counter: { fontSize: 12, textAlign: 'right', paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   deleteButton: {
     flexDirection: 'row',

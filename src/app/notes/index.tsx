@@ -1,18 +1,19 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { Icon } from '@/components/Icon';
+import { LabelChip } from '@/components/LabelChip';
 import { MemoCard } from '@/components/MemoCard';
 import { useToast } from '@/components/Toast';
 import { copyText } from '@/lib/clipboard';
 import { animateReorder, favoritesFirst } from '@/lib/favorites';
 import { t } from '@/lib/i18n';
 import { useMemos } from '@/lib/memos-context';
-import type { Memo } from '@/lib/memos-db';
+import type { Memo, MemoLabel } from '@/lib/memos-db';
 import { radius, spacing, useColors } from '@/lib/theme';
 
 const FAB_SIZE = 60;
@@ -23,8 +24,15 @@ const memoText = (memo: Memo) => (memo.body ? `${memo.title}\n\n${memo.body}` : 
 export default function NotesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { memos, loaded, setFavorite, removeMemo } = useMemos();
-  const sorted = useMemo(() => favoritesFirst(memos), [memos]);
+  const { memos, labels, loaded, setFavorite, removeMemo } = useMemos();
+  const labelsById = useMemo(() => new Map(labels.map((label) => [label.id, label])), [labels]);
+  // Only one label's notes; back to all of them if that label is deleted
+  const [filterId, setFilterId] = useState<string | null>(null);
+  const filter = filterId !== null && labelsById.has(filterId) ? filterId : null;
+  const sorted = useMemo(
+    () => favoritesFirst(filter === null ? memos : memos.filter((memo) => memo.labelId === filter)),
+    [memos, filter],
+  );
   const { toast, show } = useToast();
   const [selected, setSelected] = useState<Memo | null>(null);
 
@@ -86,7 +94,14 @@ export default function NotesScreen() {
       <FlatList
         data={sorted}
         keyExtractor={(memo) => memo.id}
-        renderItem={({ item }) => <MemoCard memo={item} onPress={showActions} onToggleFavorite={toggleFavorite} />}
+        renderItem={({ item }) => (
+          <MemoCard
+            memo={item}
+            label={item.labelId ? labelsById.get(item.labelId) : undefined}
+            onPress={showActions}
+            onToggleFavorite={toggleFavorite}
+          />
+        )}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.list,
@@ -96,12 +111,21 @@ export default function NotesScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListHeaderComponent={
           memos.length > 0 ? (
-            <Text style={[styles.count, { color: colors.textTertiary }]}>
-              {memos.length === 1 ? t('countOne') : t('countMany', { n: memos.length })}
-            </Text>
+            <>
+              <LabelFilter labels={labels} selected={filter} onSelect={setFilterId} />
+              <Text style={[styles.count, { color: colors.textTertiary }]}>
+                {sorted.length === 1 ? t('countOne') : t('countMany', { n: sorted.length })}
+              </Text>
+            </>
           ) : undefined
         }
-        ListEmptyComponent={<EmptyState onAdd={addMemo} />}
+        ListEmptyComponent={
+          memos.length > 0 ? (
+            <Text style={[styles.filterEmpty, { color: colors.textSecondary }]}>{t('labelFilterEmpty')}</Text>
+          ) : (
+            <EmptyState onAdd={addMemo} />
+          )
+        }
       />
 
       {memos.length > 0 ? (
@@ -135,6 +159,49 @@ export default function NotesScreen() {
   );
 }
 
+/** Above the list: all notes, or one label's; and the way to the labels themselves. */
+function LabelFilter({
+  labels,
+  selected,
+  onSelect,
+}: {
+  labels: MemoLabel[];
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.filter}
+      contentContainerStyle={styles.filterContent}
+      accessibilityRole="radiogroup"
+    >
+      {labels.length > 0 ? (
+        <>
+          <LabelChip text={t('labelFilterAll')} selected={selected === null} onPress={() => onSelect(null)} />
+          {labels.map((label) => (
+            <LabelChip
+              key={label.id}
+              text={label.name}
+              color={label.color}
+              selected={selected === label.id}
+              onPress={() => onSelect(selected === label.id ? null : label.id)}
+            />
+          ))}
+        </>
+      ) : null}
+      <LabelChip
+        text={labels.length > 0 ? '' : t('labels')}
+        icon="label"
+        selected={false}
+        onPress={() => router.push('/notes/labels')}
+        accessibilityLabel={t('manageLabels')}
+      />
+    </ScrollView>
+  );
+}
+
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   const colors = useColors();
 
@@ -164,6 +231,10 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   listEmpty: { flexGrow: 1 },
   count: { fontSize: 13, fontWeight: '500', marginBottom: spacing.md, marginLeft: spacing.xs },
+  // Scrolls edge to edge, past the list's side padding
+  filter: { marginHorizontal: -spacing.lg, marginBottom: spacing.md },
+  filterContent: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  filterEmpty: { fontSize: 15, textAlign: 'center', marginTop: spacing.xxl },
   fab: {
     position: 'absolute',
     right: spacing.xl,

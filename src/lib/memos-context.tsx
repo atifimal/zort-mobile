@@ -4,45 +4,80 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { useDataChanges } from './data-events';
 import { setFavorite as setRowFavorite } from './db';
-import { deleteMemo, insertMemo, listMemos, updateMemo, type Memo } from './memos-db';
+import type { LabelColor } from './label-colors';
+import {
+  deleteMemo,
+  deleteMemoLabel,
+  insertMemo,
+  insertMemoLabel,
+  listMemoLabels,
+  listMemos,
+  updateMemo,
+  updateMemoLabel,
+  type Memo,
+  type MemoLabel,
+} from './memos-db';
 
-export type MemoInput = { title: string; body: string };
+/** `labelId` left out: none (a new note), or unchanged (an edit). */
+export type MemoInput = { title: string; body: string; labelId?: string | null };
+export type LabelInput = { name: string; color: LabelColor };
 
 type MemosContextValue = {
   memos: Memo[];
+  labels: MemoLabel[];
   loaded: boolean;
   createMemo(input: MemoInput): Promise<Memo>;
   editMemo(id: string, input: MemoInput): Promise<void>;
   setFavorite(id: string, favorite: boolean): Promise<void>;
   removeMemo(id: string): Promise<void>;
+  createLabel(input: LabelInput): Promise<MemoLabel>;
+  editLabel(id: string, input: LabelInput): Promise<void>;
+  removeLabel(id: string): Promise<void>;
 };
 
 const MemosContext = createContext<MemosContextValue | null>(null);
 
-/** The Notes page's notes; at the root so the home screen can show how many there are. */
+/** The Notes page's notes and their labels; at the root so the home screen can count them. */
 export function MemosProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const [memos, setMemos] = useState<Memo[]>([]);
+  const [labels, setLabels] = useState<MemoLabel[]>([]);
   const [loaded, setLoaded] = useState(false);
   const memosRef = useRef(memos);
+  const labelsRef = useRef(labels);
 
   const commit = useCallback((next: Memo[]) => {
     memosRef.current = next;
     setMemos(next);
   }, []);
 
+  const commitLabels = useCallback((next: MemoLabel[]) => {
+    labelsRef.current = next;
+    setLabels(next);
+  }, []);
+
+  const load = useCallback(async () => {
+    const [nextMemos, nextLabels] = await Promise.all([listMemos(db), listMemoLabels(db)]);
+    return { nextMemos, nextLabels };
+  }, [db]);
+
   // Another copy of this provider (the widget's quick-add window, or the app) changed the notes
   const announce = useDataChanges('memos', () => {
-    listMemos(db)
-      .then(commit)
+    load()
+      .then(({ nextMemos, nextLabels }) => {
+        commit(nextMemos);
+        commitLabels(nextLabels);
+      })
       .catch((error) => console.error('Could not reload memos', error));
   });
 
   useEffect(() => {
     let cancelled = false;
-    listMemos(db)
-      .then((rows) => {
-        if (!cancelled) commit(rows);
+    load()
+      .then(({ nextMemos, nextLabels }) => {
+        if (cancelled) return;
+        commit(nextMemos);
+        commitLabels(nextLabels);
       })
       .catch((error) => console.error('Could not load notes', error))
       .finally(() => {
@@ -51,7 +86,7 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [db, commit]);
+  }, [load, commit, commitLabels]);
 
   const createMemo = useCallback(
     async (input: MemoInput) => {
@@ -60,6 +95,7 @@ export function MemosProvider({ children }: { children: ReactNode }) {
         id: randomUUID(),
         title: input.title.trim(),
         body: input.body.trim(),
+        labelId: input.labelId ?? null,
         favorite: false,
         createdAt: now,
         updatedAt: now,
@@ -76,7 +112,13 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     async (id: string, input: MemoInput) => {
       const existing = memosRef.current.find((memo) => memo.id === id);
       if (!existing) throw new Error(`Note ${id} not found`);
-      const memo: Memo = { ...existing, title: input.title.trim(), body: input.body.trim(), updatedAt: Date.now() };
+      const memo: Memo = {
+        ...existing,
+        title: input.title.trim(),
+        body: input.body.trim(),
+        labelId: input.labelId === undefined ? existing.labelId : input.labelId,
+        updatedAt: Date.now(),
+      };
       await updateMemo(db, memo);
       // The list is ordered by last edit, so the edited note moves to the top
       commit([memo, ...memosRef.current.filter((item) => item.id !== id)]);
@@ -104,9 +146,42 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     [db, commit, announce],
   );
 
+  const createLabel = useCallback(
+    async (input: LabelInput) => {
+      const label: MemoLabel = { id: randomUUID(), name: input.name.trim(), color: input.color, createdAt: Date.now() };
+      await insertMemoLabel(db, label);
+      commitLabels([...labelsRef.current, label]);
+      announce();
+      return label;
+    },
+    [db, commitLabels, announce],
+  );
+
+  const editLabel = useCallback(
+    async (id: string, input: LabelInput) => {
+      const existing = labelsRef.current.find((label) => label.id === id);
+      if (!existing) throw new Error(`Label ${id} not found`);
+      const label: MemoLabel = { ...existing, name: input.name.trim(), color: input.color };
+      await updateMemoLabel(db, label);
+      commitLabels(labelsRef.current.map((item) => (item.id === id ? label : item)));
+      announce();
+    },
+    [db, commitLabels, announce],
+  );
+
+  const removeLabel = useCallback(
+    async (id: string) => {
+      await deleteMemoLabel(db, id);
+      commitLabels(labelsRef.current.filter((label) => label.id !== id));
+      commit(memosRef.current.map((memo) => (memo.labelId === id ? { ...memo, labelId: null } : memo)));
+      announce();
+    },
+    [db, commit, commitLabels, announce],
+  );
+
   const value = useMemo(
-    () => ({ memos, loaded, createMemo, editMemo, setFavorite, removeMemo }),
-    [memos, loaded, createMemo, editMemo, setFavorite, removeMemo],
+    () => ({ memos, labels, loaded, createMemo, editMemo, setFavorite, removeMemo, createLabel, editLabel, removeLabel }),
+    [memos, labels, loaded, createMemo, editMemo, setFavorite, removeMemo, createLabel, editLabel, removeLabel],
   );
 
   return <MemosContext.Provider value={value}>{children}</MemosContext.Provider>;

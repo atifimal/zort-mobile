@@ -5,7 +5,7 @@ import { localCounts, restoreSnapshot, takeSnapshot } from '../backup-data';
 import { makeSnapshot, readSnapshot } from '../backup-format';
 import { DATABASE_VERSION, insertNote, listNotes, migrate, type Note } from '../db';
 import { insertLink, listLinks, type Link } from '../links-db';
-import { insertMemo, listMemos, type Memo } from '../memos-db';
+import { deleteMemoLabel, insertMemo, insertMemoLabel, listMemoLabels, listMemos, type Memo, type MemoLabel } from '../memos-db';
 import {
   insertTask,
   insertTaskCompletion,
@@ -27,7 +27,8 @@ const pinned: Note = {
 };
 const unpinned: Note = { ...pinned, id: 'n2', title: 'Later', pinned: false, window: null, favorite: false };
 const link: Link = { id: 'l1', url: 'https://zort.ing/', title: 'Zort', favorite: false, createdAt: 3, updatedAt: 3 };
-const memo: Memo = { id: 'm1', title: 'Shopping', body: 'Milk', favorite: true, createdAt: 4, updatedAt: 5 };
+const label: MemoLabel = { id: 'g1', name: 'Work', color: 'blue', createdAt: 4 };
+const memo: Memo = { id: 'm1', title: 'Shopping', body: 'Milk', labelId: 'g1', favorite: true, createdAt: 4, updatedAt: 5 };
 const task: Task = {
   id: 't1',
   title: 'Gym',
@@ -59,6 +60,7 @@ async function filledDatabase() {
   await insertNote(db, pinned);
   await insertNote(db, unpinned);
   await insertLink(db, link);
+  await insertMemoLabel(db, label);
   await insertMemo(db, memo);
   await insertTask(db, task);
   return db;
@@ -75,6 +77,7 @@ describe('Drive backup, through a real database', () => {
     expect(await listNotes(after)).toEqual(await listNotes(before));
     expect(await listLinks(after)).toEqual([link]);
     expect(await listMemos(after)).toEqual([memo]);
+    expect(await listMemoLabels(after)).toEqual([label]);
     expect(await listTasks(after)).toEqual([task]);
   });
 
@@ -122,7 +125,7 @@ describe('Drive backup, through a real database', () => {
     await restoreSnapshot(phone, fromElsewhere);
 
     expect(await listMemos(phone)).toEqual([
-      { id: 'm9', title: 'Hi', body: '', favorite: false, createdAt: 1, updatedAt: 1 },
+      { id: 'm9', title: 'Hi', body: '', labelId: null, favorite: false, createdAt: 1, updatedAt: 1 },
     ]);
   });
 
@@ -156,6 +159,36 @@ describe('Drive backup, through a real database', () => {
     await restoreSnapshot(after, readSnapshot(JSON.stringify(older), DATABASE_VERSION));
     expect(await listTaskCompletions(after)).toEqual([]);
     expect(await listTasks(after)).toEqual([task]);
+  });
+
+  it('drops the phone’s note labels for a backup from before labels', async () => {
+    const phone = await filledDatabase();
+    // Made at schema 8: notes without a label_id, and no labels table
+    const { label_id: _, ...olderMemo } = (await takeSnapshot(phone)).tables.memos![0]!;
+    const older = JSON.stringify({ ...makeSnapshot({ memos: [olderMemo] }, 8), schema: 8 });
+
+    await restoreSnapshot(phone, readSnapshot(older, DATABASE_VERSION));
+
+    expect(await listMemoLabels(phone)).toEqual([]);
+    expect(await listMemos(phone)).toEqual([{ ...memo, labelId: null }]);
+  });
+});
+
+describe('note labels', () => {
+  it('leaves a deleted label’s notes in place, unlabeled and unedited', async () => {
+    const db = await filledDatabase();
+
+    await deleteMemoLabel(db, label.id);
+
+    expect(await listMemoLabels(db)).toEqual([]);
+    expect(await listMemos(db)).toEqual([{ ...memo, labelId: null }]);
+  });
+
+  it('reads a color this version doesn’t know as gray', async () => {
+    const db = await freshDatabase();
+    await insertMemoLabel(db, { ...label, color: 'chartreuse' as MemoLabel['color'] });
+
+    expect(await listMemoLabels(db)).toEqual([{ ...label, color: 'gray' }]);
   });
 });
 

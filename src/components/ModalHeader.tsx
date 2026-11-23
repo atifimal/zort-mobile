@@ -10,6 +10,8 @@ type Props = {
   /** Omitted: no Save button (e.g. the item no longer exists). */
   onSave?: () => void;
   canSave?: boolean;
+  /** The left button's text, if not Cancel (e.g. Done, where there's nothing to save). */
+  cancelLabel?: string;
 };
 
 /**
@@ -17,7 +19,7 @@ type Props = {
  * headerLeft/headerRight: react-native-screens on Android crashes ("child already has a
  * parent") when those re-render while the modal closes.
  */
-export function ModalHeader({ title, onCancel, onSave, canSave = true }: Props) {
+export function ModalHeader({ title, onCancel, onSave, canSave = true, cancelLabel }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -29,7 +31,7 @@ export function ModalHeader({ title, onCancel, onSave, canSave = true }: Props) 
         { paddingTop: Platform.OS === 'android' ? insets.top : 0, borderBottomColor: colors.border },
       ]}
     >
-      <HeaderButton label={t('cancel')} onPress={onCancel} color={colors.accent} />
+      <HeaderButton label={cancelLabel ?? t('cancel')} onPress={onCancel} color={colors.accent} />
       <Text style={[styles.title, { color: colors.text }]} numberOfLines={1} accessibilityRole="header">
         {title}
       </Text>
