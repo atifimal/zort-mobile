@@ -22,7 +22,7 @@ type Section = { section: TaskSection; data: ListTask[]; count: number };
 export default function TasksScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { tasks, completions, loaded, now, complete, restore, setFavorite, clearCompleted } = useTasks();
+  const { tasks, completions, loaded, now, complete, restore, clearCompleted } = useTasks();
   // Above the + button, which sits where the toast would
   const { toast, show } = useToast({ above: FAB_SIZE });
   const [showDone, setShowDone] = useState(false);
@@ -89,15 +89,6 @@ export default function TasksScreen() {
     [completions, complete, restore, show],
   );
 
-  const toggleFavorite = useCallback(
-    (task: Task) => {
-      Haptics.selectionAsync().catch(() => {});
-      animateReorder();
-      setFavorite(task.id, !task.favorite).catch(() => Alert.alert(t('taskSaveFailed')));
-    },
-    [setFavorite],
-  );
-
   const confirmClear = () => {
     Alert.alert(t('clearCompletedTitle'), doneCount === 1 ? t('clearCompletedOne') : t('clearCompletedMany', { n: doneCount }), [
       { text: t('cancel'), style: 'cancel' },
@@ -120,7 +111,7 @@ export default function TasksScreen() {
         sections={sections}
         keyExtractor={rowKey}
         renderItem={({ item }) => (
-          <TaskCard task={item} now={now} onPress={open} onToggleDone={toggleDone} onToggleFavorite={toggleFavorite} />
+          <TaskCard task={item} now={now} onPress={open} onToggleDone={toggleDone} />
         )}
         renderSectionHeader={({ section }) =>
           section.section === 'done' ? (

@@ -27,7 +27,6 @@ const task = (patch: Partial<Task>): Task => ({
   occurrence: 0,
   completedAt: null,
   reminder: null,
-  favorite: false,
   createdAt: 1,
   updatedAt: 1,
   ...patch,
@@ -122,7 +121,7 @@ describe('grouping', () => {
     task({ id: 'overdue', due: at(2026, 3, 9, 23) }),
     task({ id: 'late', due: at(2026, 3, 10, 8) }),
     task({ id: 'tonight', due: at(2026, 3, 10, 20) }),
-    task({ id: 'favorite', due: at(2026, 3, 10, 22), favorite: true }),
+    task({ id: 'night', due: at(2026, 3, 10, 22) }),
     task({ id: 'tomorrow', due: at(2026, 3, 11, 0) }),
     task({ id: 'later', due: at(2026, 4, 1, 9) }),
     task({ id: 'done-old', completedAt: 5 }),
@@ -132,7 +131,7 @@ describe('grouping', () => {
   it('puts each task in its group, in order', () => {
     expect(groupTasks(list, NOW).map(({ section, tasks }) => [section, tasks.map((item) => item.id)])).toEqual([
       ['overdue', ['overdue']],
-      ['today', ['favorite', 'late', 'tonight']],
+      ['today', ['late', 'tonight', 'night']],
       ['tomorrow', ['tomorrow']],
       ['upcoming', ['later']],
       ['someday', ['someday']],

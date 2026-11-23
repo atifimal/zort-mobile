@@ -30,8 +30,8 @@ type NoteRow = {
 
 export const DATABASE_VERSION = 9;
 
-/** The tables whose rows can be marked as favorites (all with a `favorite` column, v5; tasks v6). */
-export type FavoriteTable = 'notes' | 'links' | 'memos' | 'tasks';
+/** The tables whose rows can be marked as favorites (all with a `favorite` column, v5). */
+export type FavoriteTable = 'notes' | 'links' | 'memos';
 
 /** Doesn't touch updated_at: marking a favorite isn't an edit. */
 export async function setFavorite(db: SQLiteDatabase, table: FavoriteTable, id: string, favorite: boolean) {

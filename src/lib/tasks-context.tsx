@@ -12,7 +12,6 @@ import {
 import { getPermissionStatus, requestPermission } from '@modules/pinned-notifications';
 
 import { useDataChanges } from './data-events';
-import { setFavorite as setRowFavorite } from './db';
 import { completeTask, movedOn, nextTaskChange, scheduleTask, widgetTask, type TaskInput } from './task-logic';
 import {
   deleteCompletedTasks,
@@ -49,7 +48,6 @@ type TasksContextValue = {
    * occurrence, the task goes back to that one; its completions from there on are taken back.
    */
   restore(task: Task): Promise<void>;
-  setFavorite(id: string, favorite: boolean): Promise<void>;
   removeTask(id: string): Promise<void>;
   clearCompleted(): Promise<void>;
 };
@@ -229,7 +227,6 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         ...schedule,
         completedAt: null,
         reminder: reminderOf(input, schedule.due),
-        favorite: false,
         createdAt: time,
         updatedAt: time,
       };
@@ -309,16 +306,6 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     [db, replace, announce, reloadCompletions],
   );
 
-  // Not an edit: updatedAt is unchanged
-  const setFavorite = useCallback(
-    async (id: string, favorite: boolean) => {
-      await setRowFavorite(db, 'tasks', id, favorite);
-      commit(tasksRef.current.map((task) => (task.id === id ? { ...task, favorite } : task)));
-      announce();
-    },
-    [db, commit, announce],
-  );
-
   const removeTask = useCallback(
     async (id: string) => {
       await deleteTask(db, id);
@@ -337,8 +324,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   }, [db, commit, announce]);
 
   const value = useMemo(
-    () => ({ tasks, completions, loaded, now, createTask, editTask, complete, restore, setFavorite, removeTask, clearCompleted }),
-    [tasks, completions, loaded, now, createTask, editTask, complete, restore, setFavorite, removeTask, clearCompleted],
+    () => ({ tasks, completions, loaded, now, createTask, editTask, complete, restore, removeTask, clearCompleted }),
+    [tasks, completions, loaded, now, createTask, editTask, complete, restore, removeTask, clearCompleted],
   );
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>;

@@ -4,11 +4,13 @@ zort.ing'in mobil uygulaması. Ana ekran bir araç menüsü: **Pins**, **Notes**
 **Görevler** (Android'de ana ekran için **Hızlı ekle** ve **Görevler** widget'ları var); yenileri
 aynı menüye eklenir (`src/app/index.tsx` içindeki `tools` listesi).
 
-Dört listede de **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
+Pins, Links ve Notes'ta **favori** var: karttaki yıldızla (Links ve Notes'ta menüden de) işaretlenir,
 favoriler listenin en üstünde durur; kendi aralarında ve geri kalanlarda listenin normal
 sıralaması korunur (`src/lib/favorites.ts`, v5: her tabloda `favorite` sütunu). Favori yapmak
 düzenleme sayılmaz, notun düzenleme tarihini değiştirmez. Pins'te sıra: favoriler, sonra
-iğneliler, sonra iğnesizler (her grupta en yeni üstte).
+iğneliler, sonra iğnesizler (her grupta en yeni üstte). Görevlerde favori yok: sıra zaten
+tarihe göre ve yıldız yalnızca bir tarih grubunun içini değiştirdiği için kaldırıldı (tablodaki
+`favorite` sütunu kullanılmadan duruyor).
 
 Android'de `expo-symbols` ikonları içi boş Material Symbols fontuyla çiziyor. Favorinin dolu
 yıldızı için dolu fonttan yalnızca yıldız glifi alınıp `assets/fonts/star-filled.ttf`'e
@@ -104,7 +106,7 @@ Yapılacaklar (kodda `tasks`, İngilizcede "Tasks").
 
 - Başlık (zorunlu) + açıklama (isteğe bağlı) + **tarih ve saat** (isteğe bağlı) + **yineleme**
 - **Liste gruplu:** Gecikmiş (önceki günler), Bugün, Yarın, Yaklaşan, Tarihsiz, Tamamlananlar.
-  Her grupta favoriler üstte, sonra en yakın tarih. Bugün içinde saati geçmiş görev "Bugün"de
+  Her grupta en yakın tarih üstte. Bugün içinde saati geçmiş görev "Bugün"de
   kalır ama tarihi ve halkası kırmızıya döner. Gruplar gece yarısı ve her saat geçtiğinde kendiliğinden
   güncellenir.
 - Karttaki halkaya dokununca tamamlanır; altta **Geri al** çıkar. Tamamlananlar katlanır, oradan

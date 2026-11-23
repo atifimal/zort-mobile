@@ -23,8 +23,6 @@ export type Task = {
    * without a due time.
    */
   reminder: number | null;
-  /** Shown first in its group. */
-  favorite: boolean;
   createdAt: number;
   updatedAt: number;
 };
@@ -38,7 +36,8 @@ type TaskRow = {
   repeat_index: number;
   completed_at: number | null;
   reminder: number | null;
-  favorite: number;
+  // The table still has a `favorite` column (v6), always 0: tasks had favorites until they
+  // turned out to change little (they only reordered a date group). Left unused, not dropped.
   created_at: number;
   updated_at: number;
 };
@@ -73,7 +72,6 @@ const fromRow = (row: TaskRow): Task => {
     occurrence: repeat && row.due_at !== null ? row.repeat_index : 0,
     completedAt: row.completed_at,
     reminder: row.due_at === null ? null : row.reminder,
-    favorite: row.favorite !== 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -88,8 +86,8 @@ export async function listTasks(db: SQLiteDatabase): Promise<Task[]> {
 
 export async function insertTask(db: SQLiteDatabase, task: Task): Promise<void> {
   await db.runAsync(
-    `INSERT INTO tasks (id, title, body, due_at, repeat, repeat_index, completed_at, reminder, favorite, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO tasks (id, title, body, due_at, repeat, repeat_index, completed_at, reminder, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     task.id,
     task.title,
     task.body,
@@ -98,13 +96,12 @@ export async function insertTask(db: SQLiteDatabase, task: Task): Promise<void> 
     task.occurrence,
     task.completedAt,
     task.reminder,
-    task.favorite ? 1 : 0,
     task.createdAt,
     task.updatedAt,
   );
 }
 
-/** Everything but `favorite` and `created_at` (a favorite isn't an edit; see setFavorite). */
+/** Everything but `created_at`. */
 export async function updateTask(db: SQLiteDatabase, task: Task): Promise<void> {
   await db.runAsync(
     `UPDATE tasks SET title = ?, body = ?, due_at = ?, repeat = ?, repeat_index = ?, completed_at = ?, reminder = ?,

@@ -7,7 +7,6 @@ import { isLate } from '@/lib/task-logic';
 import type { Task } from '@/lib/tasks-db';
 import { radius, spacing, useColors } from '@/lib/theme';
 
-import { FavoriteButton } from './FavoriteButton';
 import { Icon } from './Icon';
 
 type Props = {
@@ -15,11 +14,10 @@ type Props = {
   now: number;
   onPress: (task: Task) => void;
   onToggleDone: (task: Task) => void;
-  onToggleFavorite: (task: Task) => void;
 };
 
 /** A task in the list: its check circle, title, due time (red once late) and repeat rule. */
-export const TaskCard = memo(function TaskCard({ task, now, onPress, onToggleDone, onToggleFavorite }: Props) {
+export const TaskCard = memo(function TaskCard({ task, now, onPress, onToggleDone }: Props) {
   const colors = useColors();
   const done = task.completedAt !== null;
   const late = isLate(task, now);
@@ -82,8 +80,6 @@ export const TaskCard = memo(function TaskCard({ task, now, onPress, onToggleDon
           </View>
         ) : null}
       </View>
-
-      {done ? null : <FavoriteButton favorite={task.favorite} onPress={() => onToggleFavorite(task)} />}
     </Pressable>
   );
 });

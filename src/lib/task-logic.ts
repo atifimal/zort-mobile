@@ -123,14 +123,12 @@ export const isLate = (task: Task, now: number) => task.completedAt === null && 
 
 function compare(a: Task, b: Task): number {
   if (a.completedAt !== null || b.completedAt !== null) return (b.completedAt ?? 0) - (a.completedAt ?? 0);
-  if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
   if (a.due !== b.due) return (a.due ?? Infinity) - (b.due ?? Infinity);
   return b.createdAt - a.createdAt;
 }
 
 /**
- * The list, in groups: each one's favorites first, then by due time (soonest first), then
- * newest first. Done tasks: the most recently completed first. Empty groups are left out.
+ * The list, in groups: each one by due time (soonest first), then newest first. Done tasks: the most recently completed first. Empty groups are left out.
  */
 export function groupTasks<T extends Task>(tasks: readonly T[], now: number): { section: TaskSection; tasks: T[] }[] {
   const groups = new Map<TaskSection, T[]>();
