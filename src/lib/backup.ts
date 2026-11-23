@@ -335,7 +335,8 @@ export async function restoreFromFile(snapshot: Snapshot): Promise<Snapshot> {
   const database = requireDb();
   const previous = await takeSnapshot(database);
   await restoreSnapshot(database, snapshot);
-  for (const table of BACKUP_TABLES) announceChange(table);
+  // A task's completions are part of the tasks
+  for (const table of BACKUP_TABLES) announceChange(table === 'task_completions' ? 'tasks' : table);
   markPending();
   return previous;
 }

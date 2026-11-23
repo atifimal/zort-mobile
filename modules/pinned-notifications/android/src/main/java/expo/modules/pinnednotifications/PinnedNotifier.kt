@@ -135,8 +135,8 @@ class PinnedNotifier(context: Context) {
         // Only the note itself: dismissing it dismisses its summary too
         if (!summary) {
           setDeleteIntent(dismissIntent(note.id))
-          addAction(0, context.getString(R.string.pinned_note_action_unpin), actionIntent(note.id, NoteAction.UNPIN))
-          addAction(0, context.getString(R.string.pinned_note_action_delete), actionIntent(note.id, NoteAction.DELETE))
+          addAction(action(R.string.pinned_note_action_unpin, note.id, NoteAction.UNPIN))
+          addAction(action(R.string.pinned_note_action_delete, note.id, NoteAction.DELETE))
         }
       }
       .build()
@@ -224,6 +224,15 @@ class PinnedNotifier(context: Context) {
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
   }
+
+  /**
+   * Unpin and Delete change the user's data, so on a locked phone the system asks for the
+   * PIN, pattern or fingerprint before running them (Android 12+; ignored on older versions).
+   */
+  private fun action(titleRes: Int, id: String, action: NoteAction) =
+    NotificationCompat.Action.Builder(0, context.getString(titleRes), actionIntent(id, action))
+      .setAuthenticationRequired(true)
+      .build()
 
   private fun actionIntent(id: String, action: NoteAction): PendingIntent {
     val intent = Intent(context, NotificationActionReceiver::class.java)

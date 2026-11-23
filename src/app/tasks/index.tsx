@@ -10,26 +10,28 @@ import { useToast } from '@/components/Toast';
 import { animateReorder } from '@/lib/favorites';
 import { t } from '@/lib/i18n';
 import { formatDue, sectionTitle } from '@/lib/task-format';
-import { groupTasks, type TaskSection } from '@/lib/task-logic';
+import { completionRows, groupTasks, rowKey, type ListTask, type TaskSection } from '@/lib/task-logic';
 import { useTasks } from '@/lib/tasks-context';
 import type { Task } from '@/lib/tasks-db';
 import { radius, spacing, useColors } from '@/lib/theme';
 
 const FAB_SIZE = 60;
 
-type Section = { section: TaskSection; data: Task[]; count: number };
+type Section = { section: TaskSection; data: ListTask[]; count: number };
 
 export default function TasksScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { tasks, loaded, now, complete, restore, setFavorite, clearCompleted } = useTasks();
+  const { tasks, completions, loaded, now, complete, restore, setFavorite, clearCompleted } = useTasks();
   // Above the + button, which sits where the toast would
   const { toast, show } = useToast({ above: FAB_SIZE });
   const [showDone, setShowDone] = useState(false);
 
-  const groups = useMemo(() => groupTasks(tasks, now), [tasks, now]);
+  // A repeating task's checked-off occurrences are listed with the completed tasks, one row each
+  const rows = useMemo(() => [...tasks, ...completionRows(tasks, completions)], [tasks, completions]);
+  const groups = useMemo(() => groupTasks(rows, now), [rows, now]);
   const todoCount = tasks.filter((task) => task.completedAt === null).length;
-  const doneCount = tasks.length - todoCount;
+  const doneCount = rows.length - todoCount;
   // The completed group folds away; its header stays to open it
   const sections: Section[] = groups.map(({ section, tasks: items }) => ({
     section,
@@ -46,7 +48,20 @@ export default function TasksScreen() {
   }, []);
 
   const toggleDone = useCallback(
-    async (task: Task) => {
+    async (task: ListTask) => {
+      // An earlier occurrence: going back to it takes back the ones checked off after it too
+      const later = task.completion
+        ? completions.filter((item) => item.taskId === task.id && item.occurrence > task.occurrence).length
+        : 0;
+      if (later > 0) {
+        const confirmed = await new Promise<boolean>((resolve) =>
+          Alert.alert(t('restoreOccurrenceTitle'), t('restoreOccurrenceMessage', { n: later }), [
+            { text: t('cancel'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('undo'), onPress: () => resolve(true) },
+          ], { cancelable: true, onDismiss: () => resolve(false) }),
+        );
+        if (!confirmed) return;
+      }
       animateReorder();
       try {
         if (task.completedAt !== null) {
@@ -71,7 +86,7 @@ export default function TasksScreen() {
         Alert.alert(t('taskSaveFailed'));
       }
     },
-    [complete, restore, show],
+    [completions, complete, restore, show],
   );
 
   const toggleFavorite = useCallback(
@@ -103,7 +118,7 @@ export default function TasksScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <SectionList
         sections={sections}
-        keyExtractor={(task) => task.id}
+        keyExtractor={rowKey}
         renderItem={({ item }) => (
           <TaskCard task={item} now={now} onPress={open} onToggleDone={toggleDone} onToggleFavorite={toggleFavorite} />
         )}

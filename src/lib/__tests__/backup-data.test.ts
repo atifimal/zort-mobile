@@ -6,7 +6,14 @@ import { makeSnapshot, readSnapshot } from '../backup-format';
 import { DATABASE_VERSION, insertNote, listNotes, migrate, type Note } from '../db';
 import { insertLink, listLinks, type Link } from '../links-db';
 import { insertMemo, listMemos, type Memo } from '../memos-db';
-import { insertTask, listTasks, type Task } from '../tasks-db';
+import {
+  insertTask,
+  insertTaskCompletion,
+  listTaskCompletions,
+  listTasks,
+  pruneTaskCompletions,
+  type Task,
+} from '../tasks-db';
 
 const pinned: Note = {
   id: 'n1',
@@ -130,5 +137,40 @@ describe('Drive backup, through a real database', () => {
     await expect(restoreSnapshot(phone, broken)).rejects.toThrow();
 
     expect(await localCounts(phone)).toEqual({ notes: 2, links: 1, memos: 1, tasks: 1 });
+  });
+
+  it('keeps a repeating task’s completed occurrences, and drops them for a backup from before them', async () => {
+    const completion = { id: 'c1', taskId: 't1', occurrence: 0, due: task.due!, completedAt: 9 };
+    const before = await filledDatabase();
+    await insertTaskCompletion(before, completion);
+    const text = JSON.stringify(await takeSnapshot(before));
+
+    const after = await freshDatabase();
+    await restoreSnapshot(after, readSnapshot(text, DATABASE_VERSION));
+    expect(await listTaskCompletions(after)).toEqual([completion]);
+
+    // Made at schema 7: tasks, but no completions table
+    const older = JSON.parse(text);
+    older.schema = 7;
+    delete older.tables.task_completions;
+    await restoreSnapshot(after, readSnapshot(JSON.stringify(older), DATABASE_VERSION));
+    expect(await listTaskCompletions(after)).toEqual([]);
+    expect(await listTasks(after)).toEqual([task]);
+  });
+});
+
+describe('task completions', () => {
+  it('keeps only the most recent five of a task', async () => {
+    const db = await freshDatabase();
+    for (let i = 0; i < 8; i++) {
+      await insertTaskCompletion(db, { id: `c${i}`, taskId: 't1', occurrence: i, due: i, completedAt: i });
+      await pruneTaskCompletions(db, 't1');
+    }
+    await insertTaskCompletion(db, { id: 'other', taskId: 't2', occurrence: 0, due: 0, completedAt: 0 });
+    await pruneTaskCompletions(db, 't1');
+
+    const kept = await listTaskCompletions(db);
+    expect(kept.filter((c) => c.taskId === 't1').map((c) => c.occurrence)).toEqual([7, 6, 5, 4, 3]);
+    expect(kept.some((c) => c.id === 'other')).toBe(true);
   });
 });

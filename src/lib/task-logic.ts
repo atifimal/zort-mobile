@@ -16,7 +16,7 @@ import {
   startOfDay,
   type Repeat,
 } from './recurrence';
-import type { Task } from './tasks-db';
+import type { Task, TaskCompletion } from './tasks-db';
 
 export type TaskInput = {
   title: string;
@@ -76,6 +76,32 @@ export function completeTask(task: Task, now: number): Task {
 
 export const isDone = (task: Task) => task.completedAt !== null;
 
+/**
+ * A row of the list: a task, or (with `completion`) an occurrence of a repeating one that was
+ * checked off, shown as a done copy of the task on that occurrence's date.
+ */
+export type ListTask = Task & { completion?: TaskCompletion };
+
+/**
+ * The checked-off occurrences of repeating tasks, as done rows of the list. Those of a task
+ * that's gone are left out.
+ */
+export function completionRows(tasks: readonly Task[], completions: readonly TaskCompletion[]): ListTask[] {
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  return completions.flatMap((completion) => {
+    const task = byId.get(completion.taskId);
+    if (!task) return [];
+    return [{ ...task, due: completion.due, occurrence: completion.occurrence, completedAt: completion.completedAt, completion }];
+  });
+}
+
+/** The key of a list row: a task's id, or its completion's. */
+export const rowKey = (row: ListTask) => (row.completion ? `${row.id}:${row.completion.id}` : row.id);
+
+/** Whether `completeTask` moved a repeating task on (rather than finishing it). */
+export const movedOn = (before: Task, after: Task) =>
+  before.completedAt === null && after.completedAt === null && after.occurrence !== before.occurrence;
+
 export type TaskSection = 'overdue' | 'today' | 'tomorrow' | 'upcoming' | 'someday' | 'done';
 
 export const SECTION_ORDER: readonly TaskSection[] = ['overdue', 'today', 'tomorrow', 'upcoming', 'someday', 'done'];
@@ -106,8 +132,8 @@ function compare(a: Task, b: Task): number {
  * The list, in groups: each one's favorites first, then by due time (soonest first), then
  * newest first. Done tasks: the most recently completed first. Empty groups are left out.
  */
-export function groupTasks(tasks: readonly Task[], now: number): { section: TaskSection; tasks: Task[] }[] {
-  const groups = new Map<TaskSection, Task[]>();
+export function groupTasks<T extends Task>(tasks: readonly T[], now: number): { section: TaskSection; tasks: T[] }[] {
+  const groups = new Map<TaskSection, T[]>();
   for (const task of tasks) {
     const section = sectionOf(task, now);
     groups.set(section, [...(groups.get(section) ?? []), task]);

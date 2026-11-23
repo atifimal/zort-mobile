@@ -44,6 +44,7 @@ amaç, bildirim kaldırılsa bile not durduğu sürece **geri gelmesi**:
 | Telefon yeniden başlatma | Açılışta otomatik geri gelir | Uygulama açılınca geri gelir |
 | Uygulama güncelleme | Otomatik geri gelir | Uygulama açılınca geri gelir |
 | Uygulamayı açma | Eksik ne varsa tamamlanır | Eksik ne varsa tamamlanır |
+| Kilit ekranında "İğneyi kaldır"/"Sil" | Android 12+: önce kilit açılmalı | Önce kilit açılmalı |
 
 \* iOS, kaydırılan bildirimi uygulamaya bildirir (`customDismissAction`) ve uygulamayı bunun
 için arka planda uyandırır. Apple bunu her durumda garanti etmiyor; kaçan olursa uygulama

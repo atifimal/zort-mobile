@@ -1,7 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { Repeat } from '../recurrence';
-import { completeTask, groupTasks, isLate, nextTaskChange, scheduleTask, sectionOf, widgetTask } from '../task-logic';
+import {
+  completeTask,
+  completionRows,
+  groupTasks,
+  isLate,
+  movedOn,
+  nextTaskChange,
+  rowKey,
+  scheduleTask,
+  sectionOf,
+  widgetTask,
+} from '../task-logic';
 import type { Task } from '../tasks-db';
 
 const at = (year: number, month: number, date: number, hours = 0, minutes = 0) =>
@@ -160,5 +171,41 @@ describe('widgetTask', () => {
 
   it('a plain task has none', () => {
     expect(widgetTask(task({ due: at(2026, 3, 10, 9) }))).toMatchObject({ repeats: false, upcoming: [], ends: true });
+  });
+});
+
+describe('completed occurrences', () => {
+  const monthly = task({
+    id: 'rent',
+    due: at(2026, 4, 1, 9),
+    repeat: { ...daily(), unit: 'month', start: at(2026, 0, 1) },
+    occurrence: 3,
+  });
+
+  it('moving on is told apart from finishing', () => {
+    const next = completeTask(monthly, NOW);
+    expect(movedOn(monthly, next)).toBe(true);
+    const plain = task({ id: 'p', due: at(2026, 3, 1) });
+    expect(movedOn(plain, completeTask(plain, NOW))).toBe(false);
+  });
+
+  it('each checked-off occurrence is a done row, on its own date', () => {
+    const completions = [
+      { id: 'c2', taskId: 'rent', occurrence: 2, due: at(2026, 2, 1, 9), completedAt: at(2026, 2, 2) },
+      { id: 'c1', taskId: 'rent', occurrence: 1, due: at(2026, 1, 1, 9), completedAt: at(2026, 1, 1) },
+      { id: 'gone', taskId: 'deleted', occurrence: 0, due: 1, completedAt: 2 },
+    ];
+    const rows = completionRows([monthly], completions);
+    expect(rows.map((row) => [row.due, row.occurrence, row.completedAt])).toEqual([
+      [at(2026, 2, 1, 9), 2, at(2026, 2, 2)],
+      [at(2026, 1, 1, 9), 1, at(2026, 1, 1)],
+    ]);
+    expect(rows.map(rowKey)).toEqual(['rent:c2', 'rent:c1']);
+
+    const groups = groupTasks([monthly, ...rows], NOW);
+    expect(groups.map((group) => [group.section, group.tasks.length])).toEqual([
+      ['upcoming', 1],
+      ['done', 2],
+    ]);
   });
 });

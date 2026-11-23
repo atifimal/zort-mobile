@@ -13,8 +13,20 @@ import { getPermissionStatus, requestPermission } from '@modules/pinned-notifica
 
 import { useDataChanges } from './data-events';
 import { setFavorite as setRowFavorite } from './db';
-import { completeTask, nextTaskChange, scheduleTask, widgetTask, type TaskInput } from './task-logic';
-import { deleteCompletedTasks, deleteTask, insertTask, listTasks, updateTask, type Task } from './tasks-db';
+import { completeTask, movedOn, nextTaskChange, scheduleTask, widgetTask, type TaskInput } from './task-logic';
+import {
+  deleteCompletedTasks,
+  deleteTask,
+  deleteTaskCompletionsFrom,
+  insertTask,
+  insertTaskCompletion,
+  listTaskCompletions,
+  listTasks,
+  pruneTaskCompletions,
+  updateTask,
+  type Task,
+  type TaskCompletion,
+} from './tasks-db';
 
 export type { TaskInput } from './task-logic';
 
@@ -23,6 +35,8 @@ export type CompleteResult = { previous: Task; task: Task };
 
 type TasksContextValue = {
   tasks: Task[];
+  /** The occurrences of repeating tasks checked off so far, most recent first. */
+  completions: TaskCompletion[];
   loaded: boolean;
   /** The current time, updated at midnight and whenever a task's due time passes. */
   now: number;
@@ -30,7 +44,10 @@ type TasksContextValue = {
   editTask(id: string, input: TaskInput): Promise<void>;
   /** Checks a task off; a repeating one moves to its next occurrence. */
   complete(id: string): Promise<CompleteResult>;
-  /** Back to to-do (a done task), or back to how it was (undoing `complete`). */
+  /**
+   * Back to to-do (a done task), or back to how it was (undoing `complete`). Given a checked-off
+   * occurrence, the task goes back to that one; its completions from there on are taken back.
+   */
   restore(task: Task): Promise<void>;
   setFavorite(id: string, favorite: boolean): Promise<void>;
   removeTask(id: string): Promise<void>;
@@ -61,6 +78,7 @@ export class SeriesOverError extends Error {
 export function TasksProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [completions, setCompletions] = useState<TaskCompletion[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now);
   const tasksRef = useRef(tasks);
@@ -80,8 +98,30 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     setTasks(next);
   }, []);
 
+  const reloadCompletions = useCallback(async () => setCompletions(await listTaskCompletions(db)), [db]);
+
   const reloadRef = useRef<() => void>(() => {});
   const announce = useDataChanges('tasks', () => reloadRef.current());
+
+  /**
+   * Keeps the occurrence `task` is on as checked off at `time` (it's moving on from it), and
+   * only the most recent COMPLETIONS_KEPT of its completions.
+   */
+  const recordCompletion = useCallback(
+    async (task: Task, time: number) => {
+      if (task.due === null) return;
+      await insertTaskCompletion(db, {
+        id: randomUUID(),
+        taskId: task.id,
+        occurrence: task.occurrence,
+        due: task.due,
+        completedAt: time,
+      });
+      // Only the last few are listed; older ones are let go
+      await pruneTaskCompletions(db, task.id);
+    },
+    [db],
+  );
 
   /**
    * Applies the widget's check-offs to the database (each at the time it was tapped, so a
@@ -98,18 +138,22 @@ export function TasksProvider({ children }: { children: ReactNode }) {
           let task = byId.get(id);
           if (!task) continue;
           for (const time of [...at].sort((a, b) => a - b)) {
-            if (task.completedAt === null) task = completeTask(task, time);
+            if (task.completedAt !== null) continue;
+            const next = completeTask(task, time);
+            if (movedOn(task, next)) await recordCompletion(task, time);
+            task = next;
           }
           await updateTask(db, task);
         }
       }
       commit(await listTasks(db));
+      await reloadCompletions();
       if (completions.length > 0) {
         announce();
         await acknowledgeTaskCompletions(completions.map((item) => item.id)).catch(() => {});
       }
     },
-    [db, commit, announce],
+    [db, commit, announce, recordCompletion, reloadCompletions],
   );
 
   useEffect(() => {
@@ -230,12 +274,16 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       const time = Date.now();
       const task = completeTask(previous, time);
       await updateTask(db, task);
+      if (movedOn(previous, task)) {
+        await recordCompletion(previous, time);
+        await reloadCompletions();
+      }
       replace(task);
       announce();
       setNow(time);
       return { previous, task };
     },
-    [db, replace, announce],
+    [db, replace, announce, recordCompletion, reloadCompletions],
   );
 
   const restore = useCallback(
@@ -252,11 +300,13 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         updatedAt: Date.now(),
       };
       await updateTask(db, task);
+      await deleteTaskCompletionsFrom(db, task.id, snapshot.occurrence);
+      await reloadCompletions();
       replace(task);
       announce();
       setNow(task.updatedAt);
     },
-    [db, replace, announce],
+    [db, replace, announce, reloadCompletions],
   );
 
   // Not an edit: updatedAt is unchanged
@@ -273,6 +323,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       await deleteTask(db, id);
       commit(tasksRef.current.filter((task) => task.id !== id));
+      setCompletions((items) => items.filter((item) => item.taskId !== id));
       announce();
     },
     [db, commit, announce],
@@ -281,12 +332,13 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   const clearCompleted = useCallback(async () => {
     await deleteCompletedTasks(db);
     commit(tasksRef.current.filter((task) => task.completedAt === null));
+    setCompletions([]);
     announce();
   }, [db, commit, announce]);
 
   const value = useMemo(
-    () => ({ tasks, loaded, now, createTask, editTask, complete, restore, setFavorite, removeTask, clearCompleted }),
-    [tasks, loaded, now, createTask, editTask, complete, restore, setFavorite, removeTask, clearCompleted],
+    () => ({ tasks, completions, loaded, now, createTask, editTask, complete, restore, setFavorite, removeTask, clearCompleted }),
+    [tasks, completions, loaded, now, createTask, editTask, complete, restore, setFavorite, removeTask, clearCompleted],
   );
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>;

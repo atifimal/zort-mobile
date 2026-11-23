@@ -28,15 +28,16 @@ final class PinnedNotifier {
 
   func registerCategory() {
     let turkish = Locale.preferredLanguages.first?.hasPrefix("tr") ?? false
+    // Both change the user's data, so a locked phone has to be unlocked first
     let unpin = UNNotificationAction(
       identifier: Self.unpinActionId,
       title: turkish ? "İğneyi kaldır" : "Unpin",
-      options: []
+      options: [.authenticationRequired]
     )
     let delete = UNNotificationAction(
       identifier: Self.deleteActionId,
       title: turkish ? "Sil" : "Delete",
-      options: [.destructive]
+      options: [.destructive, .authenticationRequired]
     )
     let category = UNNotificationCategory(
       identifier: Self.categoryId,

@@ -56,6 +56,22 @@ export default function HomeScreen() {
       warning: shownCount > 0 && permission !== null && permission !== 'granted' ? t('notificationsOff') : undefined,
     },
     {
+      key: 'tasks',
+      title: t('tasksTitle'),
+      description: t('tasksDescription'),
+      icon: 'task',
+      href: '/tasks',
+      status:
+        tasks.length === 0
+          ? t('tasksEmpty')
+          : todoCount === 0
+            ? t('tasksAllDone')
+            : todoCount === 1
+              ? t('tasksCountOne')
+              : t('tasksCountMany', { n: todoCount }),
+      warning: overdueCount > 0 ? t('tasksOverdue', { n: overdueCount }) : undefined,
+    },
+    {
       key: 'notes',
       title: t('notesTitle'),
       description: t('notesDescription'),
@@ -80,22 +96,6 @@ export default function HomeScreen() {
           : links.length === 1
             ? t('linksCountOne')
             : t('linksCountMany', { n: links.length }),
-    },
-    {
-      key: 'tasks',
-      title: t('tasksTitle'),
-      description: t('tasksDescription'),
-      icon: 'task',
-      href: '/tasks',
-      status:
-        tasks.length === 0
-          ? t('tasksEmpty')
-          : todoCount === 0
-            ? t('tasksAllDone')
-            : todoCount === 1
-              ? t('tasksCountOne')
-              : t('tasksCountMany', { n: todoCount }),
-      warning: overdueCount > 0 ? t('tasksOverdue', { n: overdueCount }) : undefined,
     },
   ];
 

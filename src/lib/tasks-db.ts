@@ -122,9 +122,75 @@ export async function updateTask(db: SQLiteDatabase, task: Task): Promise<void> 
 }
 
 export async function deleteTask(db: SQLiteDatabase, id: string): Promise<void> {
+  await db.runAsync('DELETE FROM task_completions WHERE task_id = ?', id);
   await db.runAsync('DELETE FROM tasks WHERE id = ?', id);
 }
 
 export async function deleteCompletedTasks(db: SQLiteDatabase): Promise<void> {
+  await db.runAsync('DELETE FROM task_completions');
   await db.runAsync('DELETE FROM tasks WHERE completed_at IS NOT NULL');
+}
+
+/**
+ * One occurrence of a repeating task that was checked off. The task row itself moves on to its
+ * next occurrence, so these rows are what lists those occurrences among the completed ones.
+ */
+export type TaskCompletion = {
+  id: string;
+  taskId: string;
+  /** Which occurrence of the series was checked off. */
+  occurrence: number;
+  /** When that occurrence was due. */
+  due: number;
+  completedAt: number;
+};
+
+type TaskCompletionRow = {
+  id: string;
+  task_id: string;
+  occurrence: number;
+  due_at: number;
+  completed_at: number;
+};
+
+export async function listTaskCompletions(db: SQLiteDatabase): Promise<TaskCompletion[]> {
+  const rows = await db.getAllAsync<TaskCompletionRow>('SELECT * FROM task_completions ORDER BY completed_at DESC');
+  return rows.map((row) => ({
+    id: row.id,
+    taskId: row.task_id,
+    occurrence: row.occurrence,
+    due: row.due_at,
+    completedAt: row.completed_at,
+  }));
+}
+
+export async function insertTaskCompletion(db: SQLiteDatabase, completion: TaskCompletion): Promise<void> {
+  await db.runAsync(
+    'INSERT INTO task_completions (id, task_id, occurrence, due_at, completed_at) VALUES (?, ?, ?, ?, ?)',
+    completion.id,
+    completion.taskId,
+    completion.occurrence,
+    completion.due,
+    completion.completedAt,
+  );
+}
+
+/** The task's completions from `occurrence` on: they're to do again once it's taken back there. */
+export async function deleteTaskCompletionsFrom(db: SQLiteDatabase, taskId: string, occurrence: number): Promise<void> {
+  await db.runAsync('DELETE FROM task_completions WHERE task_id = ? AND occurrence >= ?', taskId, occurrence);
+}
+
+/** How many of a repeating task's checked-off occurrences are kept (the most recent ones). */
+export const COMPLETIONS_KEPT = 5;
+
+/** Deletes the task's completions beyond the most recent COMPLETIONS_KEPT. */
+export async function pruneTaskCompletions(db: SQLiteDatabase, taskId: string): Promise<void> {
+  await db.runAsync(
+    `DELETE FROM task_completions WHERE task_id = ? AND id NOT IN (
+       SELECT id FROM task_completions WHERE task_id = ? ORDER BY occurrence DESC, completed_at DESC LIMIT ?
+     )`,
+    taskId,
+    taskId,
+    COMPLETIONS_KEPT,
+  );
 }

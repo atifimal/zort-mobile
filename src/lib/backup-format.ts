@@ -15,7 +15,7 @@
  */
 
 /** The tables that are backed up; a new tool adds its own. */
-export const BACKUP_TABLES = ['notes', 'links', 'memos', 'tasks'] as const;
+export const BACKUP_TABLES = ['notes', 'links', 'memos', 'tasks', 'task_completions'] as const;
 
 export type BackupTable = (typeof BACKUP_TABLES)[number];
 export type Row = Record<string, unknown>;
@@ -38,7 +38,11 @@ export type Snapshot = {
  * at schema n - 1 to schema n. Only for changes a new column's DEFAULT can't cover. Example:
  *   6: (tables) => ({ ...tables, notes: tables.notes?.map(({ body, ...row }) => ({ ...row, text: body })) }),
  */
-export const UPGRADES: Record<number, (tables: Tables) => Tables> = {};
+export const UPGRADES: Record<number, (tables: Tables) => Tables> = {
+  // Repeating tasks' completions (v8): a backup from before had none, so its tasks come back
+  // without the device's (which belong to the tasks being replaced)
+  8: (tables) => (tables.tasks && !tables.task_completions ? { ...tables, task_completions: [] } : tables),
+};
 
 /** A backup written by a newer version of Zort: restoring it, or replacing it, would lose data. */
 export class BackupTooNewError extends Error {

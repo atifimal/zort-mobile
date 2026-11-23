@@ -28,7 +28,7 @@ type NoteRow = {
   updated_at: number;
 };
 
-export const DATABASE_VERSION = 7;
+export const DATABASE_VERSION = 8;
 
 /** The tables whose rows can be marked as favorites (all with a `favorite` column, v5; tasks v6). */
 export type FavoriteTable = 'notes' | 'links' | 'memos' | 'tasks';
@@ -153,6 +153,24 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       `);
     });
     version = 7;
+  }
+
+  if (version === 7) {
+    // History of a repeating task: one row per occurrence checked off (the task itself moves on)
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS task_completions (
+          id           TEXT PRIMARY KEY NOT NULL,
+          task_id      TEXT NOT NULL,
+          occurrence   INTEGER NOT NULL,
+          due_at       INTEGER NOT NULL,
+          completed_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS task_completions_task ON task_completions (task_id, occurrence);
+        PRAGMA user_version = 8;
+      `);
+    });
+    version = 8;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
