@@ -155,6 +155,19 @@ class TaskStore(context: Context) {
     private const val KEY_TASKS = "tasks"
     private const val KEY_COMPLETIONS = "completions"
 
+    /** How many days ahead a dated task shows on the widget: due within the next 5 days (or late). */
+    private const val SHOW_DAYS_AHEAD = 5
+
+    /**
+     * The tasks the widget lists at [now]: undated ones, and dated ones due no later than
+     * [SHOW_DAYS_AHEAD] days from today. A later one appears at the midnight it comes in range
+     * (the widget redraws then anyway). The app's own list shows them all.
+     */
+    fun shown(tasks: List<WidgetTask>, now: Long): List<WidgetTask> {
+      val last = addDays(startOfDay(now), SHOW_DAYS_AHEAD)
+      return tasks.filter { it.due == null || startOfDay(it.due) <= last }
+    }
+
     fun startOfDay(time: Long): Long = Calendar.getInstance().run {
       timeInMillis = time
       set(Calendar.HOUR_OF_DAY, 0)

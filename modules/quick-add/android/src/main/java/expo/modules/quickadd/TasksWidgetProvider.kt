@@ -14,7 +14,7 @@ import android.widget.RemoteViews
 /**
  * The Tasks home screen widget (4×4): the tasks still to do, soonest first, each with a check
  * circle; a + that opens the quick-add window for a task. Its list comes from [TaskStore], which
- * the app fills; it redraws on every sync, at midnight and when a due time passes (to mark it
+ * the app fills, less dated tasks due more than a few days out ([TaskStore.shown]); it redraws on every sync, at midnight and when a due time passes (to mark it
  * late), and when the clock, time zone or language changes.
  */
 class TasksWidgetProvider : AppWidgetProvider() {
@@ -57,8 +57,10 @@ class TasksWidgetProvider : AppWidgetProvider() {
       scheduleRefresh(context, tasks, now)
     }
 
-    private fun views(context: Context, widgetId: Int, tasks: List<WidgetTask>, now: Long) =
+    private fun views(context: Context, widgetId: Int, all: List<WidgetTask>, now: Long) =
       RemoteViews(context.packageName, R.layout.tasks_widget).apply {
+        // Count only what the list shows: tasks due later than a few days out are left off
+        val tasks = TaskStore.shown(all, now)
         val today = TaskStore.startOfDay(now)
         val overdue = tasks.count { it.due != null && TaskStore.startOfDay(it.due) < today }
         setTextViewText(

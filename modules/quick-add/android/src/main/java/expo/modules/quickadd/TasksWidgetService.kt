@@ -17,10 +17,10 @@ private class TasksRowFactory(private val context: Context) : RemoteViewsService
 
   override fun onCreate() {}
 
-  /** Soonest first; tasks without a date after the others, newest first. */
+  /** Those due within a few days (see [TaskStore.shown]), soonest first; tasks without a date after the others, newest first. */
   override fun onDataSetChanged() {
     now = System.currentTimeMillis()
-    tasks = TaskStore(context).all().sortedWith(
+    tasks = TaskStore.shown(TaskStore(context).all(), now).sortedWith(
       compareBy<WidgetTask>({ it.due == null }, { it.due ?: 0L }).thenByDescending { it.createdAt },
     )
   }
